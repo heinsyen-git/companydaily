@@ -30,6 +30,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--pri);outline-offset:2px}
 .loading{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:30;color:var(--muted)}
 dialog.setdlg{width:min(520px,calc(100vw - 20px))}
+.danger{border:1px solid var(--bad);background:var(--bad-soft);border-radius:12px;padding:14px}
 [hidden]{display:none!important}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
 .top-in{max-width:1180px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -173,6 +174,11 @@ table.t{border-collapse:collapse;width:100%;font-size:13px;min-width:1180px}
   <h3 style="font-size:15px;margin:0 0 8px">Ganti PIN</h3>
   <div style="display:grid;gap:8px;grid-template-columns:1fr 1fr"><label class="f">PIN lama<input class="in" id="pOld" type="password" inputmode="numeric"></label><label class="f">PIN baru<input class="in" id="pNew" type="password" inputmode="numeric"></label></div>
   <button class="btn pri" id="pSave" style="margin-top:10px">Simpan PIN</button>
+  <section id="dangerZone" hidden><hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+    <div class="danger"><h3 style="font-size:15px;margin:0 0 4px;color:var(--bad)">Hapus semua data</h3>
+    <p class="hint" style="margin:0 0 10px">Menghapus semua <b>order, item, riwayat, update harian, laporan terkirim, dan quotation</b>. Data pengguna, PIN, dan pengaturan tetap ada. Sebelum dihapus, <b>salinan cadangan</b> otomatis dibuat di Google Drive.</p>
+    <div style="display:grid;gap:8px;grid-template-columns:1fr 1fr"><label class="f">PIN Anda<input class="in" id="clPin" type="password" inputmode="numeric"></label><label class="f">Ketik <b>HAPUS SEMUA</b><input class="in" id="clTxt" autocomplete="off"></label></div>
+    <button class="btn" id="clBtn" style="margin-top:10px;background:var(--bad);border-color:var(--bad);color:#fff">Hapus semua data</button></div></section>
   <hr style="border:0;border-top:1px solid var(--line);margin:16px 0"><button class="btn" id="logout" style="color:var(--bad)">Keluar</button>
 </div></dialog>
 <dialog id="dlg"><div class="dh"><div><h3 id="dT"></h3><small id="dS"></small></div><button class="x" id="dX" aria-label="Tutup">×</button></div><div class="db" id="dB"></div></dialog>
@@ -180,7 +186,7 @@ table.t{border-collapse:collapse;width:100%;font-size:13px;min-width:1180px}
 
 <script>
 // Link Web App Apps Script (yang berakhiran /exec)
-   const API_URL="https://script.google.com/macros/s/AKfycbzMwpVN3kDlfWJGFwk5VVm5YNYbUmkbE73z3yz15yXsL7mUyXTwGJpYycI1WNT_km8/exec";
+const API_URL="TEMPEL_LINK_EXEC_COMPANY_TEAM_DI_SINI";
 (function(){
 "use strict";
 const $=s=>document.querySelector(s);
@@ -252,9 +258,18 @@ function show(v){ view=v; tabs(); ["dash","mine","orders","quot"].forEach(n=>$("
 function rerender(){ ({dash:renderDash,mine:renderMine,orders:renderOrders,quot:renderQuot})[view](); }
 
 /* ---------- pengaturan ---------- */
-$("#meBtn").onclick=()=>{ $("#setWho").textContent=ME.nama+" ("+(isField()?"Field Team":ME.role)+")"; $("#setMail").hidden=isField();
+$("#meBtn").onclick=()=>{ $("#setWho").textContent=ME.nama+" ("+(isField()?"Field Team":ME.role)+")"; $("#setMail").hidden=isField(); $("#dangerZone").hidden=isField(); $("#clPin").value=""; $("#clTxt").value="";
   if(!isField()){ $("#sEm").value=DB.settings.emailManager||""; $("#sCc").value=DB.settings.emailCc||""; } $("#setDlg").showModal(); };
 $("#setX").onclick=()=>$("#setDlg").close();
+$("#clBtn").onclick=async()=>{ const pin=$("#clPin").value.trim(), t=$("#clTxt").value.trim();
+  if(!pin){ toast("Masukkan PIN Anda"); return; } if(t.toUpperCase()!=="HAPUS SEMUA"){ toast("Ketik HAPUS SEMUA untuk konfirmasi"); return; }
+  if(!confirm("Yakin hapus SEMUA order, item, riwayat, update, dan quotation? Cadangan akan dibuat otomatis.")) return;
+  const b=$("#clBtn"); b.disabled=true; b.textContent="Membuat cadangan & menghapus…";
+  try{ const r=await run("clearAll",pin,t); $("#setDlg").close(); await reload(true); rerender();
+    $("#dT").textContent="Semua data sudah dihapus"; $("#dS").textContent="Cadangan tersimpan di Google Drive.";
+    $("#dB").innerHTML=`<p>Data yang dihapus: ${Object.entries(r.hasil).map(([k,n])=>esc(k)+" "+n+" baris").join(", ")}.</p><p>Cadangan: <a href="${esc(r.backupUrl)}" target="_blank" rel="noopener">${esc(r.backupName)}</a></p>`; $("#dlg").showModal();
+  }catch(e){ toast(e.message); }
+  b.disabled=false; b.textContent="Hapus semua data"; };
 $("#logout").onclick=()=>{ saveToken(""); location.reload(); };
 $("#sSave").onclick=async()=>{ try{ await run("saveSettings",{emailManager:$("#sEm").value,emailCc:$("#sCc").value}); DB.settings.emailManager=$("#sEm").value; DB.settings.emailCc=$("#sCc").value; toast("Email tersimpan"); }catch(e){ toast(e.message); } };
 $("#pSave").onclick=async()=>{ const n=$("#pNew").value.trim(); if(n.length<4){ toast("PIN baru minimal 4 karakter"); return; }
