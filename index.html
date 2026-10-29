@@ -127,14 +127,18 @@ table.t.fit{table-layout:fixed;min-width:0}
 .t tr.flash td{animation:flash 1.6s ease-out}
 @keyframes flash{0%,40%{background:var(--warn-soft)}100%{background:transparent}}
 table.t.qt{min-width:900px;table-layout:fixed}
-table.t.qt tr.qg td{background:var(--bg,#f1f4f9);border-top:1px solid var(--line);padding-top:9px;padding-bottom:9px}
-table.t.qt tr.qg .qgc{margin-left:10px;font-size:12px;color:var(--muted);font-weight:500}
-table.t.qt td.qk{color:var(--muted)}
 .qt th,.qt td{padding:10px 8px;font-size:13px}.qt td small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
 .qt .qn{font-weight:800;color:var(--pri);text-align:center}.qt th:first-child{text-align:center}
 .qt .qr{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .qt .qnote{white-space:pre-line}
 .qt tr:hover td{background:var(--bg)}
+/* kartu order: tata letak sebelumnya + nomor urut kecil */
+.olist .order{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 14px;align-items:start;width:100%;text-align:left}
+.olist .o-num{justify-self:start;align-self:start;width:auto;min-width:28px;height:28px;padding:0 6px}
+.olist .o-main{min-width:0}
+.olist .o-side{justify-items:end}
+.olist .o-items{grid-column:1/-1}
+@media(max-width:640px){.olist .order{grid-template-columns:auto minmax(0,1fr)}.olist .o-side{grid-column:2;justify-items:start}}
 [hidden]{display:none!important}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
 .top-in{max-width:1180px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -659,26 +663,21 @@ function renderQuot(){
     <select class="in" id="qst"><option value="">Semua status</option>${sts.map(x=>`<option${QF.st===x?" selected":""}>${esc(x)}</option>`).join("")}</select></div>
   <div class="card tw" style="padding:0"><table class="t qt"><colgroup><col style="width:46px"><col style="width:11%"><col style="width:17%"><col style="width:19%"><col style="width:13%"><col style="width:11%"><col><col style="width:96px"></colgroup>
     <tr><th>No</th><th>Kategori</th><th>Perusahaan</th><th>Order</th><th style="text-align:right">Jumlah (Rp)</th><th>Status order</th><th>Hal yang dibahas dengan klien</th><th></th></tr>
-    ${(()=>{ const G=[],M={}; list.forEach(q=>{ const k=(q.kat||"").trim(); if(!M[k]){ M[k]={k,rows:[]}; G.push(M[k]); } M[k].rows.push(q); });
-      const sum=r=>r.reduce((a,q)=>a+(+String(q.rp||"").replace(/[^\d]/g,"")||0),0);
-      return G.map(g=>`<tr class="qg"><td colspan="7"><b>${esc(g.k||"Tanpa kategori")}</b><span class="qgc">${g.rows.length} data${sum(g.rows)?` · ${rupiah(sum(g.rows))}`:""}</span></td><td class="act"><button class="mini add" data-qa="${esc(g.k)}" title="Tambah data di kategori ini">+</button></td></tr>`
-      +g.rows.map((q,i)=>`<tr><td class="qn">${i+1}</td><td class="qk">${esc(q.kat||"–")}</td><td><b>${esc(q.c)}</b></td><td>${esc(q.o)}${q.d?`<small>${fmt(q.d)}</small>`:""}</td><td class="qr">${rupiah(q.rp)}</td><td><span class="pill ${qCls(q.st)}">${esc(q.st||"–")}</span></td><td class="qnote">${esc(q.note||"")}${q.by?`<small>Diperbarui ${esc(q.by)}</small>`:""}</td>
-      <td class="act"><button class="mini" data-qe="${esc(q.id)}" title="Ubah">✎</button><button class="mini del" data-qd="${esc(q.id)}" title="Hapus">🗑</button></td></tr>`).join("")).join("");
-    })()||`<tr><td colspan="8" class="hint" style="padding:18px">Belum ada quotation. Klik <b>+ Tambah quotation</b>.</td></tr>`}
+    ${list.map((q,i)=>`<tr><td class="qn">${i+1}</td><td>${esc(q.kat||"–")}</td><td><b>${esc(q.c)}</b></td><td>${esc(q.o)}${q.d?`<small>${fmt(q.d)}</small>`:""}</td><td class="qr">${rupiah(q.rp)}</td><td><span class="pill ${qCls(q.st)}">${esc(q.st||"–")}</span></td><td class="qnote">${esc(q.note||"")}${q.by?`<small>Diperbarui ${esc(q.by)}</small>`:""}</td>
+      <td class="act"><button class="mini" data-qe="${esc(q.id)}" title="Ubah">✎</button><button class="mini del" data-qd="${esc(q.id)}" title="Hapus">🗑</button></td></tr>`).join("")||`<tr><td colspan="8" class="hint" style="padding:18px">Belum ada quotation. Klik <b>+ Tambah quotation</b>.</td></tr>`}
   </table></div>`;
   $("#qNew").onclick=()=>openQuot(null);
-  $("#v-quot").querySelectorAll("[data-qa]").forEach(b=>b.onclick=()=>openQuot(null,b.dataset.qa));
   $("#qq").oninput=e=>{ QF.q=e.target.value; const p=e.target.selectionStart; renderQuot(); const n=$("#qq"); n.focus(); n.setSelectionRange(p,p); };
   $("#qst").onchange=e=>{ QF.st=e.target.value; renderQuot(); };
   $("#v-quot").querySelectorAll("[data-qe]").forEach(b=>b.onclick=()=>openQuot(DB.quot.find(q=>q.id===b.dataset.qe)));
   $("#v-quot").querySelectorAll("[data-qd]").forEach(b=>b.onclick=async()=>{ if(b.dataset.sure!=="1"){ b.dataset.sure="1"; b.textContent="Hapus?"; b.classList.add("sure"); setTimeout(()=>{ if(b.isConnected){ b.dataset.sure=""; b.textContent="🗑"; b.classList.remove("sure"); } },3000); return; }
     try{ await run("deleteQuot",b.dataset.qd); DB.quot=DB.quot.filter(q=>q.id!==b.dataset.qd); toast("Quotation dihapus"); renderQuot(); }catch(e){ toast(e.message); } });
 }
-function openQuot(q,preKat){
+function openQuot(q){
   const kats=[...new Set((DB.quot||[]).map(x=>x.kat).filter(Boolean))], sts=[...new Set(["Quotation","Ok proses","Cancel",...(DB.quot||[]).map(x=>x.st).filter(Boolean)])];
-  $("#dT").textContent=q?"Ubah quotation":(preKat?"Tambah data · "+preKat:"Tambah quotation"); $("#dS").textContent="Diisi manual. Tersimpan langsung ke Google Sheets (sheet Daftar Quotation).";
+  $("#dT").textContent=q?"Ubah quotation":"Tambah quotation"; $("#dS").textContent="Diisi manual. Tersimpan langsung ke Google Sheets (sheet Daftar Quotation).";
   $("#dB").innerHTML=`<div class="nform">
-    <label class="f">Kategori<input class="in" id="qKat" list="qKats" value="${esc(q?q.kat:(preKat||""))}" placeholder="Misalnya Perizinan, Akun, Legal"><datalist id="qKats">${kats.map(k=>`<option value="${esc(k)}">`).join("")}</datalist></label>
+    <label class="f">Kategori<input class="in" id="qKat" list="qKats" value="${esc(q?q.kat:"")}" placeholder="Misalnya Perizinan, Akun, Legal"><datalist id="qKats">${kats.map(k=>`<option value="${esc(k)}">`).join("")}</datalist></label>
     <label class="f">Tanggal<input class="in" id="qD" type="date" value="${esc(q?q.d:TODAY)}"></label>
     <label class="f full">Perusahaan<input class="in" id="qC" value="${esc(q?q.c:"")}" placeholder="PT ..."></label>
     <label class="f full">Order<input class="in" id="qO" value="${esc(q?q.o:"")}" placeholder="Misalnya Pengalihan akun WLK, order 23.10.26"></label>
@@ -693,7 +692,7 @@ function openQuot(q,preKat){
       if(q) Object.assign(q,r); else (DB.quot=DB.quot||[]).push(r);
       $("#dlg").close(); toast(q?"Quotation diperbarui":"Quotation ditambahkan"); renderQuot(); }
     catch(e){ toast(e.message.replace(/^KONFLIK:\s*/,"")); if(/^KONFLIK/.test(e.message)){ await reload(true); $("#dlg").close(); renderQuot(); } b.disabled=false; b.textContent="Simpan"; } };
-  $("#dlg").showModal(); setTimeout(()=>$(preKat&&!q?"#qC":"#qKat").focus(),60);
+  $("#dlg").showModal(); setTimeout(()=>$("#qKat").focus(),60);
 }
 
 $("#dX").onclick=()=>$("#dlg").close(); // klik di luar jendela tidak menutup form; jendela hanya bergetar halus sebagai tanda
