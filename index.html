@@ -215,7 +215,8 @@ table.t{border-collapse:collapse;width:100%;font-size:13px;min-width:1180px}
 .t .in{padding:6px 7px;font-size:13px;background:var(--paper)}
 .t td.late .in{border-color:var(--bad);color:var(--bad)}
 .tl{list-style:none;margin:0;padding:0;display:grid;gap:10px}
-.tl li{display:grid;grid-template-columns:96px 1fr;gap:10px;font-size:14px}
+.tl li{display:grid;grid-template-columns:120px 1fr;gap:10px;font-size:14px}
+.tl time{white-space:nowrap;font-variant-numeric:tabular-nums}
 .tl time{font-size:12px;color:var(--muted);font-weight:600;padding-top:2px}
 .tl small{display:block;color:var(--muted);font-size:12px}
 .rep{white-space:pre-wrap;font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px;max-height:55vh;overflow:auto;margin:0}
@@ -294,6 +295,9 @@ const pad=n=>String(n).padStart(2,"0");
 const iso=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
 let TODAY=iso(new Date());
 const fmt=s=>s?new Date(s+"T00:00:00").toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"}):"–";
+const BLN=["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+const nowHM=()=>{ const d=new Date(); return pad(d.getHours())+":"+pad(d.getMinutes()); };
+const fmtHist=(d,t)=>{ if(!d) return "–"; const p=String(d).split("-"); if(p.length<3) return esc(d); return p[2]+BLN[+p[1]-1]+p[0].slice(2)+(t?" : "+t:""); };
 const fmtLong=s=>new Date(s+"T00:00:00").toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
 let tT; const toast=m=>{const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(tT);tT=setTimeout(()=>t.classList.remove("on"),2800);};
 let STATUS=["Belum proses","Menunggu persyaratan","On proses","Menunggu TTD klien","Hold","Selesai","Cancel"];
@@ -453,7 +457,7 @@ function copy(t){ const fb=()=>{ const a=document.createElement("textarea"); a.v
 async function saveItem(it,fields,note){
   try{ const r=await run("updateItem",it.id,fields,note||"",it.u);
     Object.assign(it,r.item);
-    if(r.update){ DB.updates.push(r.update); const o=DB.orders.find(x=>x.no===it.no); (DB.hist[it.no]=DB.hist[it.no]||[]).push({d:TODAY,no:it.no,x:`${it.d}: ${r.update.from!==r.update.to?r.update.from+" → "+r.update.to:r.update.to}${r.update.note?". "+r.update.note:""}`,by:ME.nama}); }
+    if(r.update){ DB.updates.push(r.update); const o=DB.orders.find(x=>x.no===it.no); (DB.hist[it.no]=DB.hist[it.no]||[]).push({d:TODAY,t:nowHM(),no:it.no,x:`${it.d}: ${r.update.from!==r.update.to?r.update.from+" → "+r.update.to:r.update.to}${r.update.note?". "+r.update.note:""}`,by:ME.nama}); }
     return true;
   }catch(e){ toast(e.message.replace(/^KONFLIK:\s*/,"")); if(/^KONFLIK/.test(e.message)){ await reload(true); } return false; }
 }
@@ -563,7 +567,7 @@ function chainFrom(o,k){
 function openOrder(no){
   const o=DB.orders.find(x=>x.no===no), pics=PICS(), F=isField();
   $("#dT").textContent=o.c; $("#dS").textContent=`No. order ${o.no}. ${o.o}${o.ok?". OK proses "+fmt(o.ok):""}`;
-  const h=(DB.hist[no]||[]).slice().sort((a,b)=>b.d.localeCompare(a.d));
+  const h=(DB.hist[no]||[]).slice().sort((a,b)=>(b.d+" "+(b.t||"")).localeCompare(a.d+" "+(a.t||"")));
   const can=i=>!F||i.p===ME.nama;
   const row=(i,k)=>{ if(i.j) return `<tr class="hd" data-k="${k}"><td colspan="8"><div class="hdw"><span class="hd-ic">▸</span><input class="in hd-in" data-f="d" value="${esc(i.d)}"${F?" disabled":""}></div></td><td class="act">${F?"":`<button class="mini add" data-ins="${k}" title="Sisipkan di bawah baris ini">+</button><button class="mini" data-unj="${k}" title="Jadikan item biasa">↺</button><button class="mini del" data-del="${k}" title="Hapus">🗑</button>`}</td></tr>`;
     const dis=can(i)?"":" disabled"; return `<tr data-k="${k}"><td><input class="in" data-f="d" value="${esc(i.d)}"${F?" disabled":""}></td>
@@ -591,13 +595,13 @@ function openOrder(no){
   <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn sm" id="addItem">+ Tambah item</button>${F?"":'<button class="btn sm" id="addHead">+ Tambah judul sub-proses</button>'}</div>
   <h3 style="font-size:15px;margin:20px 0 8px">Riwayat order</h3>
   <div style="display:flex;gap:8px;margin-bottom:12px"><input class="in" id="hIn" placeholder="Tulis perkembangan terbaru order ini"><button class="btn pri" id="hAdd">Tambah</button></div>
-  <ul class="tl">${h.slice(0,HIST_ALL.has(no)?h.length:3).map(e=>`<li><time>${fmt(e.d)}</time><div>${esc(e.x)}${e.by?`<small>oleh ${esc(e.by)}</small>`:""}</div></li>`).join("")||'<li><time></time><div class="hint">Belum ada riwayat.</div></li>'}</ul>
+  <ul class="tl">${h.slice(0,HIST_ALL.has(no)?h.length:3).map(e=>`<li><time>${fmtHist(e.d,e.t)}</time><div>${esc(e.x)}${e.by?`<small>oleh ${esc(e.by)}</small>`:""}</div></li>`).join("")||'<li><time></time><div class="hint">Belum ada riwayat.</div></li>'}</ul>
   ${h.length>3?`<button class="btn sm" id="histMore" style="margin-top:10px">${HIST_ALL.has(no)?"Sembunyikan riwayat lama":"Tampilkan semua riwayat ("+h.length+")"}</button>`:""}`;
   if($("#oeBtn")){ $("#oeBtn").onclick=()=>{ $("#oeBox").hidden=!$("#oeBox").hidden; if(!$("#oeBox").hidden) $("#oeC").focus(); }; $("#oeCancel").onclick=()=>{ $("#oeBox").hidden=true; };
     $("#oeSave").onclick=async()=>{ const b=$("#oeSave"); b.disabled=true; b.textContent="Menyimpan…";
       try{ const r=await run("updateOrder",no,{no:$("#oeNo").value.trim(),c:$("#oeC").value.trim(),o:$("#oeO").value.trim(),ok:$("#oeOk").value});
         if(r.no!==no){ o.items.forEach(i=>i.no=r.no); DB.hist[r.no]=(DB.hist[no]||[]); delete DB.hist[no]; if(EXP.has(no)){ EXP.delete(no); EXP.add(r.no); } }
-        Object.assign(o,{no:r.no,c:r.c,o:r.o,ok:r.ok}); if(r.note) (DB.hist[r.no]=DB.hist[r.no]||[]).push({d:TODAY,no:r.no,x:r.note,by:ME.nama});
+        Object.assign(o,{no:r.no,c:r.c,o:r.o,ok:r.ok}); if(r.note) (DB.hist[r.no]=DB.hist[r.no]||[]).push({d:TODAY,t:nowHM(),no:r.no,x:r.note,by:ME.nama});
         toast("Data order disimpan"); openOrder(r.no); }
       catch(e){ toast(e.message); b.disabled=false; b.textContent="Simpan"; } }; }
   $("#chainOn").onchange=e=>{ CHAIN=e.target.checked; try{ localStorage.setItem("ct-chain",CHAIN?"1":"0"); }catch(_){} };
@@ -626,7 +630,7 @@ function openOrder(no){
   $("#dB").querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{ const k=+b.dataset.del, it=o.items[k];
     if(b.dataset.sure!=="1"){ b.dataset.sure="1"; b.textContent="Hapus?"; b.classList.add("sure"); setTimeout(()=>{ if(b.isConnected){ b.dataset.sure=""; b.textContent="🗑"; b.classList.remove("sure"); } },3000); return; }
     b.disabled=true;
-    try{ await run("deleteItem",it.id); o.items.splice(k,1); (DB.hist[no]=DB.hist[no]||[]).push({d:TODAY,no,x:"Item dihapus: "+it.d,by:ME.nama}); toast("Item dihapus"); }catch(e){ toast(e.message); }
+    try{ await run("deleteItem",it.id); o.items.splice(k,1); (DB.hist[no]=DB.hist[no]||[]).push({d:TODAY,t:nowHM(),no,x:"Item dihapus: "+it.d,by:ME.nama}); toast("Item dihapus"); }catch(e){ toast(e.message); }
     openOrder(no); });
   $("#hAdd").onclick=async()=>{ const t=$("#hIn").value.trim(); if(!t) return; try{ const r=await run("addHistory",no,t); (DB.hist[no]=DB.hist[no]||[]).push(r); openOrder(no); toast("Riwayat ditambahkan"); }catch(e){ toast(e.message); } };
   $("#dlg").classList.add("wide");
