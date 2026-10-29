@@ -91,6 +91,8 @@ dialog[open]{animation:dlgIn .28s cubic-bezier(.2,.8,.2,1)}
 @media (prefers-reduced-motion:reduce){.ld-mark,.ld-bar i{animation:none}}
 dialog.nudge{animation:nudge .32s ease-in-out}
 @keyframes nudge{0%,100%{transform:none}25%{transform:translateX(-6px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
+.mini.del:hover{color:var(--bad);border-color:var(--bad)}
+.mini.sure{width:auto;padding:0 10px;background:var(--bad);border-color:var(--bad);color:#fff;font-size:12px;font-weight:700}
 [hidden]{display:none!important}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
 .top-in{max-width:1180px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -518,7 +520,7 @@ function openOrder(no){
   $("#dT").textContent=o.c; $("#dS").textContent=`No. order ${o.no}. ${o.o}${o.ok?". OK proses "+fmt(o.ok):""}`;
   const h=(DB.hist[no]||[]).slice().sort((a,b)=>b.d.localeCompare(a.d));
   const can=i=>!F||i.p===ME.nama;
-  const row=(i,k)=>{ if(i.j) return `<tr class="hd" data-k="${k}"><td colspan="8"><div class="hdw"><span class="hd-ic">▸</span><input class="in hd-in" data-f="d" value="${esc(i.d)}"${F?" disabled":""}></div></td><td class="act">${F?"":`<button class="btn sm" data-addin="${k}" title="Tambah item di bawah judul ini">+ Item</button><button class="mini" data-unj="${k}" title="Jadikan item biasa">↺</button>`}</td></tr>`;
+  const row=(i,k)=>{ if(i.j) return `<tr class="hd" data-k="${k}"><td colspan="8"><div class="hdw"><span class="hd-ic">▸</span><input class="in hd-in" data-f="d" value="${esc(i.d)}"${F?" disabled":""}></div></td><td class="act">${F?"":`<button class="btn sm" data-addin="${k}" title="Tambah item di bawah judul ini">+ Item</button><button class="mini" data-unj="${k}" title="Jadikan item biasa">↺</button><button class="mini del" data-del="${k}" title="Hapus">🗑</button>`}</td></tr>`;
     const dis=can(i)?"":" disabled"; return `<tr data-k="${k}"><td><input class="in" data-f="d" value="${esc(i.d)}"${F?" disabled":""}></td>
     <td><select class="in" data-f="p"${F?" disabled":""}><option value="">–</option>${pics.map(p=>`<option${p===i.p?" selected":""}>${esc(p)}</option>`).join("")}</select></td>
     <td><input class="in" data-f="t" value="${esc(i.t)}" list="places" style="min-width:110px"${dis}></td>
@@ -527,7 +529,7 @@ function openOrder(no){
     <td class="${isLate(i)?"late":""}"><input class="in" data-f="g" type="date" value="${esc(targetOf(i))}"${dis}></td>
     <td><select class="in" data-f="st"${dis}>${STATUS.map(s=>`<option${s===i.st?" selected":""}>${esc(s)}</option>`).join("")}</select></td>
     <td><input class="in" data-f="k" value="${esc(i.k)}" style="min-width:180px"${dis}></td>
-    <td class="act">${F?"":`<button class="mini" data-mkj="${k}" title="Jadikan judul sub-proses">▤</button>`}</td></tr>`; };
+    <td class="act">${F?"":`<button class="mini" data-mkj="${k}" title="Jadikan judul sub-proses">▤</button><button class="mini del" data-del="${k}" title="Hapus">🗑</button>`}</td></tr>`; };
   $("#dB").innerHTML=`<div class="ohead"><h3 style="font-size:15px;margin:0">Item dokumen</h3>
     <label class="chain"><input type="checkbox" id="chainOn"${CHAIN?" checked":""}> Tgl submit berikutnya otomatis lanjut dari target item sebelumnya</label></div>
   <div class="tw"><table class="t"><tr><th>Dokumen / proses</th><th>PIC</th><th>Tempat proses</th><th>Lama (hari kerja)</th><th>Tgl submit</th><th>Target selesai</th><th>Status</th><th>Keterangan</th><th></th></tr>
@@ -555,6 +557,11 @@ function openOrder(no){
   $("#dB").querySelectorAll("[data-addin]").forEach(b=>b.onclick=()=>add({d:"Item baru"},afterLastOfGroup(+b.dataset.addin)));
   $("#dB").querySelectorAll("[data-mkj],[data-unj]").forEach(b=>b.onclick=async()=>{ const k=+(b.dataset.mkj??b.dataset.unj), it=o.items[k], toJ=b.dataset.mkj!=null;
     if(await saveItem(it,{j:toJ},"")) toast(toJ?"Dijadikan judul sub-proses":"Dijadikan item biasa"); openOrder(no); });
+  $("#dB").querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{ const k=+b.dataset.del, it=o.items[k];
+    if(b.dataset.sure!=="1"){ b.dataset.sure="1"; b.textContent="Hapus?"; b.classList.add("sure"); setTimeout(()=>{ if(b.isConnected){ b.dataset.sure=""; b.textContent="🗑"; b.classList.remove("sure"); } },3000); return; }
+    b.disabled=true;
+    try{ await run("deleteItem",it.id); o.items.splice(k,1); (DB.hist[no]=DB.hist[no]||[]).push({d:TODAY,no,x:"Item dihapus: "+it.d,by:ME.nama}); toast("Item dihapus"); }catch(e){ toast(e.message); }
+    openOrder(no); });
   $("#hAdd").onclick=async()=>{ const t=$("#hIn").value.trim(); if(!t) return; try{ const r=await run("addHistory",no,t); (DB.hist[no]=DB.hist[no]||[]).push(r); openOrder(no); toast("Riwayat ditambahkan"); }catch(e){ toast(e.message); } };
   if(!$("#dlg").open) $("#dlg").showModal();
 }
@@ -584,9 +591,14 @@ function tick(){
   setTimeout(tick,1000-n.getMilliseconds()+10);
 }
 tick();
-if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(API_URL)){
+const CFG_ERR=typeof window.CT_API_URL==="undefined"
+  ? "File <b>config.js</b> tidak ditemukan. Pastikan namanya persis <b>config.js</b> (huruf kecil semua) dan berada di folder yang sama dengan index.html, bukan di dalam folder lain."
+  : /TEMPEL/i.test(API_URL)||!API_URL ? "File <b>config.js</b> sudah ada, tetapi link /exec belum diisi."
+  : !/^https:\/\/script\.google\.com\/(a\/[^/]+\/)?macros\/s\/[^/]+\/exec/.test(API_URL) ? "Isi <b>config.js</b> bukan link /exec yang benar:<br><code style=\"word-break:break-all;font-size:12px\">"+esc(API_URL)+"</code><br>Link harus diawali <b>https://script.google.com/macros/s/</b> dan diakhiri <b>/exec</b>."
+  : "";
+if(CFG_ERR){
   $("#vLogin").hidden=true; $("#loading").hidden=false;
-  $("#loading").innerHTML='<div style="max-width:460px;text-align:center;padding:20px;line-height:1.6"><b style="color:var(--ink)">Link server belum diatur.</b><br>Buka file <b>config.js</b> di repository GitHub, lalu isi link /exec dari Apps Script COMPANY DAILY.</div>';
+  $("#loading").innerHTML='<div style="max-width:480px;text-align:center;padding:20px;line-height:1.6"><b style="color:var(--ink)">Link server belum diatur.</b><br>'+CFG_ERR+'</div>';
 } else if(TOKEN) enter(); else startLogin();
 })();
 
