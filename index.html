@@ -103,6 +103,28 @@ table.t.fit{table-layout:fixed;min-width:0}
 .t.fit tr.hd td{padding:6px 4px}
 @media(max-width:1180px){table.t.fit{min-width:1120px}}
 @media(max-width:640px){dialog#dlg.wide{width:100vw;height:100dvh;max-height:100dvh;border-radius:0}}
+/* kartu order bisa dibuka */
+.order{display:grid;grid-template-columns:1fr auto;gap:6px 14px;align-items:start;cursor:default}
+.order:hover{border-color:var(--line)}
+.o-main{cursor:pointer;border-radius:8px;outline-offset:3px}.o-main:hover h3{color:var(--pri)}
+.o-side{display:grid;justify-items:end;gap:6px}
+.o-pills{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.o-exp{border:1px solid var(--line);background:var(--paper);border-radius:99px;padding:4px 12px;font-size:12px;font-weight:700;color:var(--pri);cursor:pointer}
+.o-exp:hover{border-color:var(--pri)}.o-exp .chev{display:inline-block;transition:transform .25s}.order.open .o-exp .chev{transform:rotate(180deg)}
+.o-items{grid-column:1/-1;border-top:1px solid var(--line);margin-top:4px;padding-top:6px;animation:rise .3s ease-out both}
+.oi{display:grid;grid-template-columns:auto 1fr auto auto;gap:4px 12px;align-items:start;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.oi-d b{font-weight:600;font-size:13px}.oi-d small{display:block;color:var(--muted);font-size:12px}
+.oi-m{color:var(--muted);font-size:12px;white-space:nowrap;padding-top:2px}.oi-m.late{color:var(--bad);font-weight:700}
+.oi-h{font-size:11px;font-weight:800;letter-spacing:.04em;color:var(--pri);text-transform:uppercase;padding:10px 0 2px}
+.oi-foot{padding-top:8px}
+.oedit-bar{display:flex;justify-content:flex-end;margin:-4px 0 6px}
+.oedit{border:1px solid var(--pri);background:var(--pri-soft);border-radius:12px;padding:14px;margin-bottom:14px;animation:rise .25s ease-out both}
+@media(max-width:640px){.order{grid-template-columns:1fr}.o-side{justify-items:start}.o-pills{justify-content:flex-start}.oi{grid-template-columns:auto 1fr}.oi-m{grid-column:2}}
+.insmenu{position:absolute;z-index:60;background:var(--paper);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(10,16,28,.18);padding:6px;display:grid;gap:2px;min-width:250px;animation:rise .18s ease-out both}
+.insmenu button{border:0;background:transparent;text-align:left;padding:9px 10px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--ink)}
+.insmenu button:hover{background:var(--pri-soft)}
+.t tr.flash td{animation:flash 1.6s ease-out}
+@keyframes flash{0%,40%{background:var(--warn-soft)}100%{background:transparent}}
 [hidden]{display:none!important}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
 .top-in{max-width:1180px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -177,7 +199,7 @@ label.f{display:grid;gap:5px;font-size:13px;color:var(--muted);font-weight:600}
 .chip{border:1px solid var(--line);background:var(--paper);border-radius:99px;padding:5px 12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted)}
 .chip[aria-pressed="true"]{background:var(--pri);border-color:var(--pri);color:var(--pri-ink)}
 /* dialog */
-dialog{border:1px solid var(--line);border-radius:16px;padding:0;background:var(--paper);color:var(--ink);width:min(1080px,calc(100vw - 20px));max-height:calc(100dvh - 30px)}
+dialog{position:fixed;border:1px solid var(--line);border-radius:16px;padding:0;background:var(--paper);color:var(--ink);width:min(1080px,calc(100vw - 20px));max-height:calc(100dvh - 30px)}
 dialog[open]{display:flex;flex-direction:column}
 dialog::backdrop{background:rgba(10,16,28,.5)}
 .dh{display:flex;gap:12px;align-items:flex-start;padding:16px 18px;border-bottom:1px solid var(--line)}
@@ -257,7 +279,7 @@ table.t{border-collapse:collapse;width:100%;font-size:13px;min-width:1180px}
     <button class="btn" id="clBtn" style="margin-top:10px;background:var(--bad);border-color:var(--bad);color:#fff">Hapus semua data</button></div></section>
   <hr style="border:0;border-top:1px solid var(--line);margin:16px 0"><button class="btn" id="logout" style="color:var(--bad)">Keluar</button>
 </div></dialog>
-<dialog id="dlg"><div class="dh"><div><h3 id="dT"></h3><small id="dS"></small></div><button class="x" id="dX" aria-label="Tutup">×</button></div><div class="db" id="dB"></div></dialog>
+<dialog id="dlg"><div class="dh"><div><h3 id="dT"></h3><small id="dS"></small></div><button class="x" id="dX" aria-label="Tutup">×</button></div><div class="db" id="dB"></div><div class="insmenu" id="insMenu" hidden></div></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- Link server disimpan terpisah di config.js, jadi file ini bisa diganti kapan saja tanpa mengedit link -->
@@ -473,6 +495,14 @@ function renderMine(){
 const OF={q:"",st:"aktif",pic:""};
 let CHAIN=true; try{ CHAIN=localStorage.getItem("ct-chain")!=="0"; }catch(e){}
 const realItems=o=>o.items.filter(i=>!i.j);
+const EXP=new Set(), HIST_ALL=new Set(); let FOCUS_ID=null;
+document.addEventListener("click",e=>{ const m=document.getElementById("insMenu"); if(m&&!m.hidden&&!e.target.closest("#insMenu")) m.hidden=true; });
+function expandHtml(o){ let head="", out=[];
+  o.items.forEach(i=>{ if(i.j){ head=i.d; return; } if(DONE(i.st)) return;
+    if(head!==null&&head!==undefined&&head!==""&&!out.some(x=>x.h===head)) out.push({h:head});
+    out.push({i}); });
+  return out.map(x=>x.h?`<div class="oi-h">${esc(x.h)}</div>`:`<div class="oi"><span>${pill(x.i.st,isLate(x.i))}</span><div class="oi-d"><b>${esc(x.i.d)}</b>${x.i.k?`<small>${esc(x.i.k)}</small>`:""}</div><span class="oi-m">${esc(x.i.p||"Tanpa PIC")}</span><span class="oi-m${isLate(x.i)?" late":""}">${targetOf(x.i)?"Target "+fmt(targetOf(x.i)):(x.i.t?esc(x.i.t):"–")}</span></div>`).join("")
+    +`<div class="oi-foot"><button class="btn sm" data-iopen="${esc(o.no)}">Buka detail order</button></div>`; }
 function renderOrders(){
   const pics=PICS();
   const match=o=>{ const its=realItems(o);
@@ -489,11 +519,16 @@ function renderOrders(){
   <div class="tools"><input class="in grow" id="oq" placeholder="Cari no. order, perusahaan, atau dokumen" value="${esc(OF.q)}">
     <select class="in" id="ost">${[["aktif","Order aktif"],["late","Ada yang lewat target"],["menunggu","Menunggu persyaratan"],["nopic","Ada item tanpa PIC"],["selesai","Selesai semua"],["semua","Semua order"]].map(([k,l])=>`<option value="${k}"${OF.st===k?" selected":""}>${l}</option>`).join("")}</select>
     <select class="in" id="opic"><option value="">Semua PIC</option>${pics.map(p=>`<option${OF.pic===p?" selected":""}>${esc(p)}</option>`).join("")}</select></div>
-  <div class="olist">${list.map(o=>{ const its=realItems(o), n=its.length, d=its.filter(i=>DONE(i.st)).length, late=its.filter(isLate).length, w=its.filter(i=>/Menunggu/.test(i.st)).length, subs=o.items.filter(i=>i.j).length;
-    return `<button class="order" data-no="${esc(o.no)}"><div><span class="no">${esc(o.no)}${o.ok?`. OK proses ${fmt(o.ok)}`:""}</span><h3>${esc(o.c)}</h3><p>${esc(o.o)}${subs?` <span class="subs">${subs} sub-proses</span>`:""}</p></div><div><div class="prog"><span>${d}/${n} selesai</span><span class="bar"><i style="width:${n?d/n*100:0}%"></i></span></div><div style="display:flex;gap:6px;justify-content:flex-end;margin-top:6px;flex-wrap:wrap">${late?`<span class="pill s-late">${late} lewat target</span>`:""}${w?`<span class="pill s-menunggu">${w} menunggu</span>`:""}</div></div></button>`; }).join("")||'<p class="hint">Tidak ada order.</p>'}</div>`;
+  <div class="olist">${list.map(o=>{ const its=realItems(o), n=its.length, d=its.filter(i=>DONE(i.st)).length, late=its.filter(isLate).length, w=its.filter(i=>/Menunggu/.test(i.st)).length, on=its.filter(i=>i.st==="On proses").length, hold=its.filter(i=>i.st==="Hold").length, subs=o.items.filter(i=>i.j).length, act=n-d, open=EXP.has(o.no);
+    return `<div class="order${open?" open":""}"><div class="o-main" data-no="${esc(o.no)}" role="button" tabindex="0"><span class="no">${esc(o.no)}${o.ok?`. OK proses ${fmt(o.ok)}`:""}</span><h3>${esc(o.c)}</h3><p>${esc(o.o)}${subs?` <span class="subs">${subs} sub-proses</span>`:""}</p></div>
+      <div class="o-side"><div class="prog"><span>${d}/${n} selesai</span><span class="bar"><i style="width:${n?d/n*100:0}%"></i></span></div><div class="o-pills">${late?`<span class="pill s-late">${late} lewat target</span>`:""}${w?`<span class="pill s-menunggu">${w} menunggu</span>`:""}${on?`<span class="pill s-on">${on} on proses</span>`:""}${hold?`<span class="pill s-hold">${hold} hold</span>`:""}</div>
+      ${act?`<button class="o-exp" data-exp="${esc(o.no)}" aria-expanded="${open}">${open?"Tutup":"Lihat "+act+" item berjalan"} <span class="chev">▾</span></button>`:""}</div>
+      ${open?`<div class="o-items">${expandHtml(o)}</div>`:""}</div>`; }).join("")||'<p class="hint">Tidak ada order.</p>'}</div>`;
   $("#oq").oninput=e=>{ OF.q=e.target.value; const p=e.target.selectionStart; renderOrders(); const n=$("#oq"); n.focus(); n.setSelectionRange(p,p); };
   $("#ost").onchange=e=>{ OF.st=e.target.value; renderOrders(); }; $("#opic").onchange=e=>{ OF.pic=e.target.value; renderOrders(); };
-  $("#v-orders").querySelectorAll("[data-no]").forEach(b=>b.onclick=()=>openOrder(b.dataset.no));
+  $("#v-orders").querySelectorAll(".o-main[data-no]").forEach(b=>{ b.onclick=()=>openOrder(b.dataset.no); b.onkeydown=e=>{ if(e.key==="Enter") openOrder(b.dataset.no); }; });
+  $("#v-orders").querySelectorAll("[data-exp]").forEach(b=>b.onclick=()=>{ const k=b.dataset.exp; EXP.has(k)?EXP.delete(k):EXP.add(k); renderOrders(); });
+  $("#v-orders").querySelectorAll("[data-iopen]").forEach(b=>b.onclick=()=>openOrder(b.dataset.iopen));
   if($("#newOrder")) $("#newOrder").onclick=openNewOrder;
 }
 function openNewOrder(){
@@ -530,7 +565,7 @@ function openOrder(no){
   $("#dT").textContent=o.c; $("#dS").textContent=`No. order ${o.no}. ${o.o}${o.ok?". OK proses "+fmt(o.ok):""}`;
   const h=(DB.hist[no]||[]).slice().sort((a,b)=>b.d.localeCompare(a.d));
   const can=i=>!F||i.p===ME.nama;
-  const row=(i,k)=>{ if(i.j) return `<tr class="hd" data-k="${k}"><td colspan="8"><div class="hdw"><span class="hd-ic">▸</span><input class="in hd-in" data-f="d" value="${esc(i.d)}"${F?" disabled":""}></div></td><td class="act">${F?"":`<button class="mini add" data-addin="${k}" title="Tambah item di bawah judul ini">+</button><button class="mini" data-unj="${k}" title="Jadikan item biasa">↺</button><button class="mini del" data-del="${k}" title="Hapus">🗑</button>`}</td></tr>`;
+  const row=(i,k)=>{ if(i.j) return `<tr class="hd" data-k="${k}"><td colspan="8"><div class="hdw"><span class="hd-ic">▸</span><input class="in hd-in" data-f="d" value="${esc(i.d)}"${F?" disabled":""}></div></td><td class="act">${F?"":`<button class="mini add" data-ins="${k}" title="Sisipkan di bawah baris ini">+</button><button class="mini" data-unj="${k}" title="Jadikan item biasa">↺</button><button class="mini del" data-del="${k}" title="Hapus">🗑</button>`}</td></tr>`;
     const dis=can(i)?"":" disabled"; return `<tr data-k="${k}"><td><input class="in" data-f="d" value="${esc(i.d)}"${F?" disabled":""}></td>
     <td><select class="in" data-f="p"${F?" disabled":""}><option value="">–</option>${pics.map(p=>`<option${p===i.p?" selected":""}>${esc(p)}</option>`).join("")}</select></td>
     <td><input class="in" data-f="t" value="${esc(i.t)}" list="places"${dis}></td>
@@ -539,8 +574,15 @@ function openOrder(no){
     <td class="${isLate(i)?"late":""}"><input class="in" data-f="g" type="date" value="${esc(targetOf(i))}"${dis}></td>
     <td><select class="in" data-f="st"${dis}>${STATUS.map(s=>`<option${s===i.st?" selected":""}>${esc(s)}</option>`).join("")}</select></td>
     <td><input class="in" data-f="k" value="${esc(i.k)}"${dis}></td>
-    <td class="act">${F?"":`<button class="mini" data-mkj="${k}" title="Jadikan judul sub-proses">▤</button><button class="mini del" data-del="${k}" title="Hapus">🗑</button>`}</td></tr>`; };
-  $("#dB").innerHTML=`<div class="ohead"><h3 style="font-size:15px;margin:0">Item dokumen</h3>
+    <td class="act">${F?"":`<button class="mini add" data-ins="${k}" title="Sisipkan di bawah baris ini">+</button><button class="mini" data-mkj="${k}" title="Jadikan judul sub-proses">▤</button><button class="mini del" data-del="${k}" title="Hapus">🗑</button>`}</td></tr>`; };
+  $("#dB").innerHTML=`${F?"":`<div class="oedit-bar"><button class="btn sm" id="oeBtn">✎ Ubah data order</button></div>
+  <div class="oedit" id="oeBox" hidden><div class="nform">
+    <label class="f">No. order<input class="in" id="oeNo" value="${esc(o.no)}"></label>
+    <label class="f">Tgl OK proses<input class="in" id="oeOk" type="date" value="${esc(o.ok)}"></label>
+    <label class="f full">Nama perusahaan<input class="in" id="oeC" value="${esc(o.c)}"></label>
+    <label class="f full">Jenis order<input class="in" id="oeO" value="${esc(o.o)}"></label></div>
+    <div style="display:flex;gap:8px;margin-top:10px"><button class="btn pri" id="oeSave">Simpan</button><button class="btn" id="oeCancel">Batal</button></div></div>`}
+  <div class="ohead"><h3 style="font-size:15px;margin:0">Item dokumen</h3>
     <label class="chain"><input type="checkbox" id="chainOn"${CHAIN?" checked":""}> Tgl submit berikutnya otomatis lanjut dari target item sebelumnya</label></div>
   <div class="tw"><table class="t fit"><colgroup><col style="width:20.5%"><col style="width:9.5%"><col style="width:10%"><col style="width:5.5%"><col style="width:11%"><col style="width:11%"><col style="width:12.5%"><col style="width:12.5%"><col style="width:7.5%"></colgroup>
   <tr><th>Dokumen / proses</th><th>PIC</th><th>Tempat proses</th><th title="Lama (hari kerja)">Lama (hr)</th><th>Tgl submit</th><th>Target selesai</th><th>Status</th><th>Keterangan</th><th></th></tr>
@@ -549,7 +591,15 @@ function openOrder(no){
   <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn sm" id="addItem">+ Tambah item</button>${F?"":'<button class="btn sm" id="addHead">+ Tambah judul sub-proses</button>'}</div>
   <h3 style="font-size:15px;margin:20px 0 8px">Riwayat order</h3>
   <div style="display:flex;gap:8px;margin-bottom:12px"><input class="in" id="hIn" placeholder="Tulis perkembangan terbaru order ini"><button class="btn pri" id="hAdd">Tambah</button></div>
-  <ul class="tl">${h.map(e=>`<li><time>${fmt(e.d)}</time><div>${esc(e.x)}${e.by?`<small>oleh ${esc(e.by)}</small>`:""}</div></li>`).join("")||'<li><time></time><div class="hint">Belum ada riwayat.</div></li>'}</ul>`;
+  <ul class="tl">${h.slice(0,HIST_ALL.has(no)?h.length:3).map(e=>`<li><time>${fmt(e.d)}</time><div>${esc(e.x)}${e.by?`<small>oleh ${esc(e.by)}</small>`:""}</div></li>`).join("")||'<li><time></time><div class="hint">Belum ada riwayat.</div></li>'}</ul>
+  ${h.length>3?`<button class="btn sm" id="histMore" style="margin-top:10px">${HIST_ALL.has(no)?"Sembunyikan riwayat lama":"Tampilkan semua riwayat ("+h.length+")"}</button>`:""}`;
+  if($("#oeBtn")){ $("#oeBtn").onclick=()=>{ $("#oeBox").hidden=!$("#oeBox").hidden; if(!$("#oeBox").hidden) $("#oeC").focus(); }; $("#oeCancel").onclick=()=>{ $("#oeBox").hidden=true; };
+    $("#oeSave").onclick=async()=>{ const b=$("#oeSave"); b.disabled=true; b.textContent="Menyimpan…";
+      try{ const r=await run("updateOrder",no,{no:$("#oeNo").value.trim(),c:$("#oeC").value.trim(),o:$("#oeO").value.trim(),ok:$("#oeOk").value});
+        if(r.no!==no){ o.items.forEach(i=>i.no=r.no); DB.hist[r.no]=(DB.hist[no]||[]); delete DB.hist[no]; if(EXP.has(no)){ EXP.delete(no); EXP.add(r.no); } }
+        Object.assign(o,{no:r.no,c:r.c,o:r.o,ok:r.ok}); if(r.note) (DB.hist[r.no]=DB.hist[r.no]||[]).push({d:TODAY,no:r.no,x:r.note,by:ME.nama});
+        toast("Data order disimpan"); openOrder(r.no); }
+      catch(e){ toast(e.message); b.disabled=false; b.textContent="Simpan"; } }; }
   $("#chainOn").onchange=e=>{ CHAIN=e.target.checked; try{ localStorage.setItem("ct-chain",CHAIN?"1":"0"); }catch(_){} };
   $("#dB").querySelectorAll("tr[data-k]").forEach(tr=>tr.addEventListener("change",async e=>{ const f=e.target.dataset.f, k=+tr.dataset.k, it=o.items[k]; if(!f||e.target.type==="checkbox") return; let v=e.target.value; if(f==="h") v=v?+v:"";
     const fields={[f]:v}; if((f==="s"||f==="h")&&it.g) fields.g="";
@@ -561,11 +611,16 @@ function openOrder(no){
         catch(err){ toast(err.message.replace(/^KONFLIK:\s*/,"")); await reload(true); } } }
     openOrder(no); }));
   const afterLastOfGroup=k=>{ let x=k; while(x+1<o.items.length&&!o.items[x+1].j) x++; return x; };
-  const add=async(item,afterIdx)=>{ try{ const afterId=afterIdx!=null&&o.items[afterIdx]?o.items[afterIdx].id:null; const it=await run("addItem",no,item,afterId);
+  const add=async(item,afterIdx,focus)=>{ try{ const afterId=afterIdx!=null&&o.items[afterIdx]?o.items[afterIdx].id:null; const it=await run("addItem",no,item,afterId); if(focus) FOCUS_ID=it.id;
       if(afterId){ o.items.splice(afterIdx+1,0,it); } else o.items.push(it); openOrder(no); }catch(e){ toast(e.message); } };
   $("#addItem").onclick=()=>add({d:"Item baru",p:F?ME.nama:""},null);
   if($("#addHead")) $("#addHead").onclick=()=>add({d:"JUDUL SUB-PROSES",j:true},null);
-  $("#dB").querySelectorAll("[data-addin]").forEach(b=>b.onclick=()=>add({d:"Item baru"},afterLastOfGroup(+b.dataset.addin)));
+  $("#dB").querySelectorAll("[data-ins]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); const k=+b.dataset.ins, m=$("#insMenu"), r=b.getBoundingClientRect();
+    m.innerHTML=`<button data-m="j">▸ Sisipkan <b>judul sub-proses</b> di bawah</button><button data-m="i">+ Sisipkan <b>item</b> di bawah</button>`;
+    m.hidden=false; const d=$("#dlg").getBoundingClientRect(); m.style.top=Math.min(d.height-m.offsetHeight-8,r.bottom-d.top+4)+"px"; m.style.left=Math.max(8,r.right-d.left-m.offsetWidth)+"px";
+    m.querySelector('[data-m="j"]').onclick=()=>{ m.hidden=true; add({d:"JUDUL SUB-PROSES",j:true},k,true); };
+    m.querySelector('[data-m="i"]').onclick=()=>{ m.hidden=true; add({d:"Item baru",p:F?ME.nama:""},k,true); }; });
+  if($("#histMore")) $("#histMore").onclick=()=>{ HIST_ALL.has(no)?HIST_ALL.delete(no):HIST_ALL.add(no); openOrder(no); };
   $("#dB").querySelectorAll("[data-mkj],[data-unj]").forEach(b=>b.onclick=async()=>{ const k=+(b.dataset.mkj??b.dataset.unj), it=o.items[k], toJ=b.dataset.mkj!=null;
     if(await saveItem(it,{j:toJ},"")) toast(toJ?"Dijadikan judul sub-proses":"Dijadikan item biasa"); openOrder(no); });
   $("#dB").querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{ const k=+b.dataset.del, it=o.items[k];
@@ -576,6 +631,7 @@ function openOrder(no){
   $("#hAdd").onclick=async()=>{ const t=$("#hIn").value.trim(); if(!t) return; try{ const r=await run("addHistory",no,t); (DB.hist[no]=DB.hist[no]||[]).push(r); openOrder(no); toast("Riwayat ditambahkan"); }catch(e){ toast(e.message); } };
   $("#dlg").classList.add("wide");
   if(!$("#dlg").open) $("#dlg").showModal();
+  if(FOCUS_ID){ const k=o.items.findIndex(x=>x.id===FOCUS_ID); FOCUS_ID=null; const inp=k>=0&&$(`#dB tr[data-k="${k}"] [data-f=d]`); if(inp){ inp.scrollIntoView({block:"center",behavior:"smooth"}); inp.focus(); inp.select(); inp.closest("tr").classList.add("flash"); } }
 }
 
 $("#dX").onclick=()=>$("#dlg").close(); // klik di luar jendela tidak menutup form; jendela hanya bergetar halus sebagai tanda
