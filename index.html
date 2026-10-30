@@ -157,6 +157,9 @@ body.syncing .top .mark::after{content:"";position:absolute;right:-3px;top:-3px;
 .oi-cap{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);padding:8px 0 0}
 .oi-now{background:var(--pri-soft);border-radius:8px;padding:8px 10px;border-bottom:0;margin-top:4px}
 .oi-foot{display:flex;gap:8px;flex-wrap:wrap}
+.sys{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--bg)}
+.sys-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.idlebar{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:70;background:var(--warn-soft);border:1px solid var(--warn);color:var(--ink);border-radius:12px;padding:10px 14px;display:flex;gap:12px;align-items:center;box-shadow:0 8px 24px rgba(10,16,28,.18);font-size:14px;max-width:92vw}
 [hidden]{display:none!important}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
 .top-in{max-width:1180px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -297,24 +300,34 @@ table.t{border-collapse:collapse;width:100%;font-size:13px;min-width:1180px}
 </div>
 
 <div class="loading" id="loading" hidden><div class="ld" aria-label="Memuat"><div class="mark ld-mark">CT</div><span class="ld-bar"><i></i></span></div></div>
-<dialog id="setDlg" class="setdlg"><div class="dh"><div><h3>Pengaturan</h3><small id="setWho"></small></div><button class="x" id="setX" aria-label="Tutup">×</button></div><div class="db">
-  <section id="setMail" hidden><h3 style="font-size:15px;margin:0 0 8px">Email laporan ke Manager</h3>
-    <label class="f">Email Manager<input class="in" id="sEm" placeholder="manager@perusahaan.com"></label>
-    <label class="f" style="margin-top:8px">CC<input class="in" id="sCc" placeholder="a@perusahaan.com, b@perusahaan.com"></label>
-    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn pri" id="sSave">Simpan email</button><a class="btn" id="sSheet" target="_blank" rel="noopener" hidden>Buka Google Sheets</a></div>
-    <p class="hint" style="margin-top:8px">Laporan harian terkirim otomatis setiap hari kerja (atur jam di sheet Pengaturan).</p><hr style="border:0;border-top:1px solid var(--line);margin:16px 0"></section>
-  <section id="setUsers" hidden><h3 style="font-size:15px;margin:0 0 4px">Nama pengguna</h3><p class="hint" style="margin:0 0 8px">Ganti nama staff dan admin. PIC item, laporan, dan riwayat ikut diperbarui otomatis.</p><div id="usrList"></div><hr style="border:0;border-top:1px solid var(--line);margin:16px 0"></section>
-  <h3 style="font-size:15px;margin:0 0 8px">Ganti PIN</h3>
+<dialog id="setDlg" class="setdlg"><div class="dh"><div><h3>Akun</h3><small id="setWho"></small></div><button class="x" id="setX" aria-label="Tutup">×</button></div><div class="db">
+  <h3 style="font-size:15px;margin:0 0 8px">Ganti PIN saya</h3>
   <div style="display:grid;gap:8px;grid-template-columns:1fr 1fr"><label class="f">PIN lama<input class="in" id="pOld" type="password" inputmode="numeric"></label><label class="f">PIN baru<input class="in" id="pNew" type="password" inputmode="numeric"></label></div>
   <button class="btn pri" id="pSave" style="margin-top:10px">Simpan PIN</button>
-  <section id="dangerZone" hidden><hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
-    <div class="danger"><h3 style="font-size:15px;margin:0 0 4px;color:var(--bad)">Hapus semua data</h3>
-    <p class="hint" style="margin:0 0 10px">Menghapus semua <b>order, item, riwayat, update harian, dan laporan terkirim</b>. Data pengguna, PIN, dan pengaturan tetap ada. Sebelum dihapus, <b>salinan cadangan</b> otomatis dibuat di Google Drive.</p>
-    <div style="display:grid;gap:8px;grid-template-columns:1fr 1fr"><label class="f">PIN Anda<input class="in" id="clPin" type="password" inputmode="numeric"></label><label class="f">Ketik <b>HAPUS SEMUA</b><input class="in" id="clTxt" autocomplete="off"></label></div>
-    <button class="btn" id="clBtn" style="margin-top:10px;background:var(--bad);border-color:var(--bad);color:#fff">Hapus semua data</button></div></section>
+  <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+  <section class="sys">
+    <div class="sys-h"><h3 style="font-size:15px;margin:0">🔒 Pengaturan sistem</h3><button class="btn sm" id="admLock" hidden>Kunci</button></div>
+    <div id="admGate"><p class="hint" style="margin:6px 0 8px">Khusus administrator. Masukkan PIN Administrator untuk membuka.</p>
+      <div style="display:flex;gap:8px"><input class="in" id="admPin" type="password" inputmode="numeric" placeholder="PIN Administrator" autocomplete="off"><button class="btn pri" id="admOpen">Buka</button></div></div>
+    <div id="admBody" hidden>
+      <p class="hint" style="margin:6px 0 12px">Terbuka. Otomatis terkunci lagi setelah 15 menit atau saat jendela ini ditutup.</p>
+      <h3 style="font-size:14px;margin:0 0 8px">Email laporan ke Manager</h3>
+      <label class="f">Email Manager<input class="in" id="sEm" placeholder="manager@perusahaan.com"></label>
+      <label class="f" style="margin-top:8px">CC<input class="in" id="sCc" placeholder="a@perusahaan.com, b@perusahaan.com"></label>
+      <button class="btn pri" id="sSave" style="margin-top:10px">Simpan email</button>
+      <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+      <h3 style="font-size:14px;margin:0 0 4px">Nama pengguna</h3><p class="hint" style="margin:0 0 8px">Ganti nama staff dan admin. PIC item, laporan, dan riwayat ikut diperbarui otomatis.</p><div id="usrList"></div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+      <div class="danger"><h3 style="font-size:15px;margin:0 0 4px;color:var(--bad)">Hapus semua data</h3>
+      <p class="hint" style="margin:0 0 10px">Menghapus semua <b>order, item, riwayat, update harian, laporan terkirim, dan quotation</b>. Data pengguna, PIN, dan pengaturan tetap ada. Sebelum dihapus, <b>salinan cadangan</b> otomatis dibuat di Google Drive.</p>
+      <label class="f">Ketik <b>HAPUS SEMUA</b><input class="in" id="clTxt" autocomplete="off"></label>
+      <button class="btn" id="clBtn" style="margin-top:10px;background:var(--bad);border-color:var(--bad);color:#fff">Hapus semua data</button></div>
+    </div>
+  </section>
   <hr style="border:0;border-top:1px solid var(--line);margin:16px 0"><button class="btn" id="logout" style="color:var(--bad)">Keluar</button>
 </div></dialog>
 <dialog id="dlg"><div class="dh"><div><h3 id="dT"></h3><small id="dS"></small></div><button class="x" id="dX" aria-label="Tutup">×</button></div><div class="db" id="dB"></div><div class="insmenu" id="insMenu" hidden></div></dialog>
+<div class="idlebar" id="idleBar" hidden><span id="idleTxt"></span><button class="btn sm pri" id="idleStay">Tetap masuk</button></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- Link server disimpan terpisah di config.js, jadi file ini bisa diganti kapan saja tanpa mengedit link -->
@@ -429,26 +442,38 @@ function show(v){ const order=TABS().map(x=>x[0]), from=order.indexOf(view), to=
 function rerender(){ ({dash:renderDash,mine:renderMine,orders:renderOrders,quot:renderQuot})[view](); }
 
 /* ---------- pengaturan ---------- */
-$("#meBtn").onclick=()=>{ $("#setWho").textContent=ME.nama+" ("+(isField()?"Field Team":ME.role)+")"; $("#setMail").hidden=isField(); $("#dangerZone").hidden=isField(); $("#setUsers").hidden=isField(); if(!isField()) renderUsers(); $("#clPin").value=""; $("#clTxt").value="";
-  if(!isField()){ $("#sEm").value=DB.settings.emailManager||""; $("#sCc").value=DB.settings.emailCc||""; } $("#setDlg").showModal(); };
+let ATOKEN="", ATIMER=null;
+function admLock(){ ATOKEN=""; clearTimeout(ATIMER); $("#admBody").hidden=true; $("#admGate").hidden=false; $("#admLock").hidden=true; $("#admPin").value=""; $("#clTxt").value=""; }
+$("#meBtn").onclick=()=>{ $("#setWho").textContent=ME.nama+" ("+(isField()?"Field Team":ME.role)+")"; admLock(); $("#setDlg").showModal(); };
 $("#setX").onclick=()=>$("#setDlg").close();
-function renderUsers(){ const box=$("#usrList"); const can=u=>isBoss()||u.role!=="Manager";
-  box.innerHTML=DB.users.map(u=>`<div class="usr"><span class="pill ${u.role==="Manager"?"s-on":u.role==="Admin"?"s-hold":"s-selesai"}">${u.role==="Field"?"Field Team":esc(u.role)}</span><input class="in" data-usr="${esc(u.user)}" value="${esc(u.nama)}"${can(u)?"":" disabled"}><button class="btn sm" data-usave="${esc(u.user)}"${can(u)?"":" disabled"}>Simpan</button></div>`).join("");
+$("#setDlg").addEventListener("close",admLock);
+$("#admLock").onclick=admLock;
+$("#admPin").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $("#admOpen").click(); } });
+$("#admOpen").onclick=async()=>{ const pin=$("#admPin").value.trim(); if(!pin){ toast("Masukkan PIN Administrator"); return; }
+  const b=$("#admOpen"); b.disabled=true; b.textContent="Memeriksa…";
+  try{ const r=await run("adminUnlock",pin); ATOKEN=r.atoken; DB.settings=r.settings; DB.users=r.users;
+    $("#sEm").value=r.settings.emailManager||""; $("#sCc").value=r.settings.emailCc||""; renderUsers();
+    $("#admGate").hidden=true; $("#admBody").hidden=false; $("#admLock").hidden=false; clearTimeout(ATIMER); ATIMER=setTimeout(admLock,15*60000); toast("Pengaturan sistem terbuka"); }
+  catch(e){ toast(e.message); $("#admPin").select(); }
+  b.disabled=false; b.textContent="Buka"; };
+const adm=(fn,...a)=>run(fn,...a,ATOKEN).catch(e=>{ if(/^ADMIN:/.test(e.message)){ admLock(); throw new Error(e.message.replace(/^ADMIN:\s*/,"")); } throw e; });
+function renderUsers(){ const box=$("#usrList");
+  box.innerHTML=DB.users.map(u=>`<div class="usr"><span class="pill ${u.role==="Manager"?"s-on":u.role==="Admin"?"s-hold":"s-selesai"}">${u.role==="Field"?"Field Team":esc(u.role)}</span><input class="in" data-usr="${esc(u.user)}" value="${esc(u.nama)}"><button class="btn sm" data-usave="${esc(u.user)}">Simpan</button></div>`).join("");
   box.querySelectorAll("[data-usave]").forEach(b=>b.onclick=async()=>{ const user=b.dataset.usave, inp=box.querySelector(`[data-usr="${user}"]`), nn=inp.value.trim(), u=DB.users.find(x=>x.user===user);
     if(!nn||nn===u.nama){ toast("Ubah nama terlebih dahulu"); return; } b.disabled=true; b.textContent="Menyimpan…";
-    try{ const r=await run("renameUser",user,nn); toast(`Nama diganti: ${r.old} → ${r.nama}`); if(ME.user===user){ ME.nama=r.nama; $("#meName").textContent=r.nama; } await reload(true); rerender(); renderUsers(); }
+    try{ const r=await adm("renameUser",user,nn); toast(`Nama diganti: ${r.old} → ${r.nama}`); if(ME.user===user){ ME.nama=r.nama; $("#meName").textContent=r.nama; } await reload(true); rerender(); renderUsers(); }
     catch(e){ toast(e.message); b.disabled=false; b.textContent="Simpan"; } }); }
-$("#clBtn").onclick=async()=>{ const pin=$("#clPin").value.trim(), t=$("#clTxt").value.trim();
-  if(!pin){ toast("Masukkan PIN Anda"); return; } if(t.toUpperCase()!=="HAPUS SEMUA"){ toast("Ketik HAPUS SEMUA untuk konfirmasi"); return; }
-  if(!confirm("Yakin hapus SEMUA order, item, riwayat, dan update? Cadangan akan dibuat otomatis.")) return;
+$("#clBtn").onclick=async()=>{ const t=$("#clTxt").value.trim();
+  if(t.toUpperCase()!=="HAPUS SEMUA"){ toast("Ketik HAPUS SEMUA untuk konfirmasi"); return; }
+  if(!confirm("Yakin hapus SEMUA order, item, riwayat, update, dan quotation? Cadangan akan dibuat otomatis.")) return;
   const b=$("#clBtn"); b.disabled=true; b.textContent="Membuat cadangan & menghapus…";
-  try{ const r=await run("clearAll",pin,t); $("#setDlg").close(); await reload(true); rerender();
+  try{ const r=await adm("clearAll",t); $("#setDlg").close(); await reload(true); rerender();
     $("#dT").textContent="Semua data sudah dihapus"; $("#dS").textContent="Cadangan tersimpan di Google Drive.";
     $("#dB").innerHTML=`<p>Data yang dihapus: ${Object.entries(r.hasil).map(([k,n])=>esc(k)+" "+n+" baris").join(", ")}.</p><p>Cadangan: <a href="${esc(r.backupUrl)}" target="_blank" rel="noopener">${esc(r.backupName)}</a></p>`; $("#dlg").showModal();
   }catch(e){ toast(e.message); }
   b.disabled=false; b.textContent="Hapus semua data"; };
-$("#logout").onclick=()=>{ saveToken(""); try{ localStorage.removeItem(CKEY); }catch(e){} location.reload(); };
-$("#sSave").onclick=async()=>{ try{ await run("saveSettings",{emailManager:$("#sEm").value,emailCc:$("#sCc").value}); DB.settings.emailManager=$("#sEm").value; DB.settings.emailCc=$("#sCc").value; toast("Email tersimpan"); }catch(e){ toast(e.message); } };
+$("#logout").onclick=()=>{ doLogout(); };
+$("#sSave").onclick=async()=>{ try{ await adm("saveSettings",{emailManager:$("#sEm").value,emailCc:$("#sCc").value}); DB.settings={emailManager:$("#sEm").value,emailCc:$("#sCc").value}; toast("Email tersimpan"); }catch(e){ toast(e.message); } };
 $("#pSave").onclick=async()=>{ const n=$("#pNew").value.trim(); if(n.length<4){ toast("PIN baru minimal 4 karakter"); return; }
   try{ const r=await run("changePin",$("#pOld").value.trim(),n); saveToken(r.token); $("#pOld").value=$("#pNew").value=""; toast("PIN berhasil diganti"); }catch(e){ toast(e.message); } };
 
@@ -860,6 +885,20 @@ $("#dX").onclick=()=>$("#dlg").close(); // klik di luar jendela tidak menutup fo
 $("#dlg").addEventListener("close",()=>{ $("#dlg").classList.remove("wide"); if(ME&&view!=="mine") rerender(); });
 document.addEventListener("visibilitychange",async()=>{ if(!document.hidden&&ME&&!busy()){ if(await reload(true)&&!busy()) rerender(); } });
 setInterval(async()=>{ if(ME&&!document.hidden&&!busy()){ if(await reload(true)&&!busy()) rerender(); } },120000);
+/* ---------- keluar otomatis jika tidak aktif ---------- */
+function doLogout(msg){ saveToken(""); try{ localStorage.removeItem(CKEY); localStorage.removeItem("ct-active"); if(msg) sessionStorage.setItem("ct-msg",msg); }catch(e){} location.reload(); }
+const idleMs=()=>((DB&&DB.idle)||5)*60000;
+let LAST_ACT=Date.now(), IDLE_WARN=false;
+function markActive(){ LAST_ACT=Date.now(); if(IDLE_WARN){ IDLE_WARN=false; $("#idleBar").hidden=true; } try{ localStorage.setItem("ct-active",String(LAST_ACT)); }catch(e){} }
+let _mt=0; ["pointerdown","keydown","wheel","touchstart","mousemove","scroll"].forEach(ev=>addEventListener(ev,()=>{ const n=Date.now(); if(n-_mt>3000){ _mt=n; markActive(); } },{passive:true,capture:true}));
+function checkIdle(){ if(!ME||!TOKEN) return;
+  let last=LAST_ACT; try{ last=Math.max(last,+localStorage.getItem("ct-active")||0); }catch(e){}
+  const left=idleMs()-(Date.now()-last);
+  if(left<=0){ doLogout("Anda otomatis keluar karena tidak ada aktivitas selama "+Math.round(idleMs()/60000)+" menit."); return; }
+  if(left<=60000){ IDLE_WARN=true; $("#idleBar").hidden=false; $("#idleTxt").textContent="Tidak ada aktivitas. Aplikasi akan keluar otomatis dalam "+Math.ceil(left/1000)+" detik."; } }
+setInterval(checkIdle,1000);
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) checkIdle(); });
+
 /* ---------- jam & meter jam kerja ---------- */
 const CK=["h1","h2",":","m1","m2",":s","s1","s2"], prevD={}, cells={};
 $("#ckTime").innerHTML=CK.map(k=>k[0]===":"?`<span class="colon${k===":s"?" s":""}">:</span>`:`<span class="dg${k[0]==="s"?" sec":""}" data-k="${k}"></span>`).join("");
@@ -875,6 +914,8 @@ function tick(){
   setTimeout(tick,1000-n.getMilliseconds()+10);
 }
 tick();
+$("#idleStay").onclick=()=>markActive();
+try{ const m=sessionStorage.getItem("ct-msg"); if(m){ sessionStorage.removeItem("ct-msg"); setTimeout(()=>{ $("#lgErr").textContent=m; },400); } }catch(e){}
 const CFG_ERR=typeof window.CT_API_URL==="undefined"
   ? "File <b>config.js</b> tidak ditemukan. Pastikan namanya persis <b>config.js</b> (huruf kecil semua) dan berada di folder yang sama dengan index.html, bukan di dalam folder lain."
   : /TEMPEL/i.test(API_URL)||!API_URL ? "File <b>config.js</b> sudah ada, tetapi link /exec belum diisi."
