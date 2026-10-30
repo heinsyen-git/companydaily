@@ -139,6 +139,13 @@ table.t.qt{min-width:900px;table-layout:fixed}
 .olist .o-side{justify-items:end}
 .olist .o-items{grid-column:1/-1}
 @media(max-width:640px){.olist .order{grid-template-columns:auto minmax(0,1fr)}.olist .o-side{grid-column:2;justify-items:start}}
+.upd-go{cursor:pointer;border-radius:8px;padding:4px;margin:-4px}.upd-go:hover{background:var(--bg)}
+.dwrap{position:relative;display:block}
+.dwrap .dt{padding-right:24px!important;font-variant-numeric:tabular-nums}
+.dpick{position:absolute;right:3px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:12px;width:20px;height:24px;border-radius:5px;padding:0}
+.dpick:hover{background:var(--soft);color:var(--pri)}
+.dhid{position:absolute;right:0;bottom:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0;padding:0}
+td.late .dt{border-color:var(--bad);color:var(--bad)}
 [hidden]{display:none!important}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
 .top-in{max-width:1180px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -313,6 +320,17 @@ const fmt=s=>s?new Date(s+"T00:00:00").toLocaleDateString("id-ID",{day:"numeric"
 const BLN=["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
 const nowHM=()=>{ const d=new Date(); return pad(d.getHours())+":"+pad(d.getMinutes()); };
 const fmtHist=(d,t)=>{ if(!d) return "–"; const p=String(d).split("-"); if(p.length<3) return esc(d); return p[2]+BLN[+p[1]-1]+p[0].slice(2)+(t?" : "+t:""); };
+/* tanggal: tampil dd/mm/yy, bisa diketik ddmmyy / ddmmyyyy / dd-mm-yy / dd/mm/yyyy */
+const fixYear=iso=>{ const m=String(iso||"").match(/^(\d{1,4})-(\d{2})-(\d{2})$/); if(!m) return iso; let y=+m[1]; if(y<100) y+=2000; return y+"-"+m[2]+"-"+m[3]; };
+const dmy=iso=>{ const m=String(iso||"").match(/^(\d{4})-(\d{2})-(\d{2})$/); return m?m[3]+"/"+m[2]+"/"+m[1].slice(2):""; };
+function parseDmy(v){ v=String(v||"").trim(); if(!v) return "";
+  let d,m,y; const p=v.split(/[\/.\-\s]+/).filter(Boolean);
+  if(p.length===3){ [d,m,y]=p; } else { const n=v.replace(/\D/g,""); if(n.length===6){ d=n.slice(0,2); m=n.slice(2,4); y=n.slice(4); } else if(n.length===8){ d=n.slice(0,2); m=n.slice(2,4); y=n.slice(4); } else if(n.length===4){ d=n.slice(0,2); m=n.slice(2,4); y=String(new Date().getFullYear()); } else return null; }
+  d=+d; m=+m; y=+y; if(y<100) y+=2000; const dt=new Date(y,m-1,d);
+  if(!y||dt.getFullYear()!==y||dt.getMonth()!==m-1||dt.getDate()!==d) return null;
+  return y+"-"+pad(m)+"-"+pad(d); }
+// tahun 2 digit di kalender bawaan (misalnya 0026) otomatis menjadi 2026
+document.addEventListener("change",e=>{ const t=e.target; if(t&&t.type==="date"&&/^00\d\d-/.test(t.value)) t.value=fixYear(t.value.replace(/^00/,"")); },true);
 const fmtLong=s=>new Date(s+"T00:00:00").toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
 let tT; const toast=m=>{const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(tT);tT=setTimeout(()=>t.classList.remove("on"),2800);};
 let STATUS=["Belum proses","Menunggu persyaratan","On proses","Menunggu TTD klien","Hold","Selesai","Cancel"];
@@ -415,8 +433,7 @@ function renderDash(){
   const S=stats(), pics=PICS(), td=today();
   const max=Math.max(1,...pics.map(p=>S.act.filter(x=>x.i.p===p).length),S.nopic.length);
   const bar=a=>["Belum proses","Menunggu","On proses","Hold"].map((st,k)=>{ const n=a.filter(x=>st==="Menunggu"?/Menunggu/.test(x.i.st):x.i.st===st).length; return n?`<i class="${["c-belum","c-menunggu","c-on","c-hold"][k]}" style="flex:${n}" title="${esc(st)}: ${n}"></i>`:""; }).join("");
-  const wl=pics.map(p=>{ const a=S.act.filter(x=>x.i.p===p); return `<div class="wl-row"><span class="nm">${esc(p)}</span><div class="stack" style="width:${Math.max(a.length/max*100,2)}%">${bar(a)}</div><span class="n">${a.length}</span></div>`; }).join("")
-    +(S.nopic.length?`<div class="wl-row"><span class="nm" style="color:var(--bad)">Tanpa PIC</span><div class="stack" style="width:${Math.max(S.nopic.length/max*100,2)}%"><i class="c-belum" style="flex:1"></i></div><span class="n">${S.nopic.length}</span></div>`:"");
+  const wl=pics.map(p=>{ const a=S.act.filter(x=>x.i.p===p); return `<div class="wl-row"><span class="nm">${esc(p)}</span><div class="stack" style="width:${Math.max(a.length/max*100,2)}%">${bar(a)}</div><span class="n">${a.length}</span></div>`; }).join("");
   const places={}; S.act.forEach(x=>{ const k=x.i.t||"(belum diisi)"; places[k]=(places[k]||0)+1; });
   const pl=Object.entries(places).sort((a,b)=>b[1]-a[1]).slice(0,7), pmax=pl[0]?pl[0][1]:1;
   const team=pics.map(p=>{ const u=td.filter(x=>x.by===p), sent=DB.sent[p];
@@ -430,13 +447,14 @@ function renderDash(){
     <button class="kpi" data-go="menunggu"><b>${S.wait.length}</b><span>menunggu persyaratan klien</span></button>
     <button class="kpi ${S.late.length?"alert":""}" data-go="late"><b>${S.late.length}</b><span>lewat target</span></button>
     <button class="kpi ${S.nopic.length?"alert":""}" data-go="nopic"><b>${S.nopic.length}</b><span>item belum ada PIC</span></button>
-    <div class="kpi"><b>${td.filter(x=>x.type==="Item").length}</b><span>update hari ini</span></div></div>
+    <button class="kpi" id="kpiUpd"><b>${td.filter(x=>x.type==="Item").length}</b><span>update hari ini</span></button></div>
   <div class="grid2">
     <div class="card"><h2>Beban kerja per PIC</h2><p class="hint">Item yang belum selesai, menurut status.</p><div class="wl">${wl}</div>
       <div class="legend"><span style="--c:var(--grey)">Belum proses</span><span style="--c:var(--warn)">Menunggu</span><span style="--c:var(--pri)">On proses</span><span style="--c:var(--hold)">Hold</span></div></div>
     <div class="card"><h2>Laporan tim hari ini</h2><p class="hint">Update Admin dan Field Team dari menu Laporan saya.</p><div class="rows">${team}</div></div></div>`;
   $("#btnRep").onclick=openReport; $("#btnRef").onclick=async()=>{ await reload(true); rerender(); toast("Data terbaru dimuat"); };
-  $("#v-dash").querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{ OF.st=b.dataset.go; show("orders"); });
+  $("#v-dash").querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{ OF.st=b.dataset.go; OF.q=""; OF.pic=""; EXP.clear(); if(b.dataset.go!=="aktif") AUTO_EXP=true; show("orders"); });
+  $("#kpiUpd").onclick=openTodayUpdates;
   $("#v-dash").querySelectorAll("[data-pic]").forEach(b=>b.onclick=()=>openPicReport(b.dataset.pic));
 }
 async function openReport(){
@@ -455,6 +473,14 @@ function openMeeting(){
   $("#dT").textContent="Bahan meeting"; $("#dS").textContent=`${Object.keys(by).length} perusahaan, ${S.wait.length+S.hold.length} item.`;
   $("#dB").innerHTML=`<pre class="rep">${esc(L.join("\n"))}</pre><div style="margin-top:12px"><button class="btn pri" id="cp">Salin teks</button></div>`;
   $("#cp").onclick=()=>copy(L.join("\n")); $("#dlg").showModal();
+}
+function openTodayUpdates(){
+  const u=today().slice().sort((a,b)=>String(b.time).localeCompare(String(a.time)));
+  $("#dT").textContent="Update hari ini"; $("#dS").textContent=fmtLong(TODAY)+". "+u.filter(x=>x.type==="Item").length+" update item"+(u.some(x=>x.type!=="Item")?", "+u.filter(x=>x.type!=="Item").length+" aktivitas lain":"")+". Klik untuk membuka ordernya.";
+  $("#dB").innerHTML=u.length?`<ul class="tl upd-list">${u.map(x=>x.type==="Lainnya"?`<li><time>${esc(x.time)}</time><div>${esc(x.note)}<small>Aktivitas lain oleh ${esc(x.by)}</small></div></li>`
+    :`<li class="upd-go" data-uno="${esc(x.no)}" role="button" tabindex="0"><time>${esc(x.time)}</time><div><b>${esc(x.c)}</b> <small>${esc(x.no)}. ${esc(x.item)}. Oleh ${esc(x.by)}</small>${x.from!==x.to?`${pill(x.from)} → ${pill(x.to)}`:pill(x.to)}${x.note?`<div style="margin-top:4px">${esc(x.note)}</div>`:""}</div></li>`).join("")}</ul>`:'<p class="hint">Belum ada update hari ini.</p>';
+  $("#dB").querySelectorAll("[data-uno]").forEach(li=>li.onclick=()=>{ if(DB.orders.some(o=>o.no===li.dataset.uno)){ view!=="orders"&&show("orders"); openOrder(li.dataset.uno); } });
+  $("#dlg").showModal();
 }
 function openPicReport(p){
   const u=today().filter(x=>x.by===p);
@@ -511,10 +537,12 @@ function renderMine(){
 const OF={q:"",st:"aktif",pic:""};
 let CHAIN=true; try{ CHAIN=localStorage.getItem("ct-chain")!=="0"; }catch(e){}
 const realItems=o=>o.items.filter(i=>!i.j);
-const EXP=new Set(), HIST_ALL=new Set(); let FOCUS_ID=null;
+const EXP=new Set(), HIST_ALL=new Set(); let FOCUS_ID=null, AUTO_EXP=false;
+const itemFilter=()=>OF.st==="menunggu"?(i=>/Menunggu/.test(i.st)):OF.st==="late"?(i=>isLate(i)):OF.st==="nopic"?(i=>!i.p&&!DONE(i.st)):(i=>!DONE(i.st));
+const filterLabel=()=>({menunggu:"menunggu persyaratan",late:"lewat target",nopic:"tanpa PIC"})[OF.st]||"berjalan";
 document.addEventListener("click",e=>{ const m=document.getElementById("insMenu"); if(m&&!m.hidden&&!e.target.closest("#insMenu")) m.hidden=true; });
-function expandHtml(o){ let head="", out=[];
-  o.items.forEach(i=>{ if(i.j){ head=i.d; return; } if(DONE(i.st)) return;
+function expandHtml(o){ let head="", out=[]; const keep=itemFilter();
+  o.items.forEach(i=>{ if(i.j){ head=i.d; return; } if(!keep(i)) return;
     if(head!==null&&head!==undefined&&head!==""&&!out.some(x=>x.h===head)) out.push({h:head});
     out.push({i}); });
   return out.map(x=>x.h?`<div class="oi-h">${esc(x.h)}</div>`:`<div class="oi"><span>${pill(x.i.st,isLate(x.i))}</span><div class="oi-d"><b>${esc(x.i.d)}</b>${x.i.k?`<small>${esc(x.i.k)}</small>`:""}</div><span class="oi-m">${esc(x.i.p||"Tanpa PIC")}</span><span class="oi-m${isLate(x.i)?" late":""}">${targetOf(x.i)?"Target "+fmt(targetOf(x.i)):(x.i.t?esc(x.i.t):"–")}</span></div>`).join("")
@@ -531,17 +559,18 @@ function renderOrders(){
     if(OF.st==="nopic") return its.some(i=>!i.p&&!DONE(i.st));
     return true; };
   const list=DB.orders.filter(match);
+  if(AUTO_EXP){ AUTO_EXP=false; list.forEach(o=>EXP.add(o.no)); }
   $("#v-orders").innerHTML=`<div class="head"><div><h1>Order</h1><p>${DB.orders.length} order, ${allItems().length} item dokumen.</p></div>${isField()?"":'<button class="btn pri" id="newOrder">+ Buat order baru</button>'}</div>
   <div class="tools"><input class="in grow" id="oq" placeholder="Cari no. order, perusahaan, atau dokumen" value="${esc(OF.q)}">
     <select class="in" id="ost">${[["aktif","Order aktif"],["late","Ada yang lewat target"],["menunggu","Menunggu persyaratan"],["nopic","Ada item tanpa PIC"],["selesai","Selesai semua"],["semua","Semua order"]].map(([k,l])=>`<option value="${k}"${OF.st===k?" selected":""}>${l}</option>`).join("")}</select>
     <select class="in" id="opic"><option value="">Semua PIC</option>${pics.map(p=>`<option${OF.pic===p?" selected":""}>${esc(p)}</option>`).join("")}</select></div>
-  <div class="olist">${list.map((o,idx)=>{ const its=realItems(o), n=its.length, d=its.filter(i=>DONE(i.st)).length, late=its.filter(isLate).length, w=its.filter(i=>/Menunggu/.test(i.st)).length, on=its.filter(i=>i.st==="On proses").length, hold=its.filter(i=>i.st==="Hold").length, subs=o.items.filter(i=>i.j).length, act=n-d, open=EXP.has(o.no);
+  <div class="olist">${list.map((o,idx)=>{ const its=realItems(o), n=its.length, d=its.filter(i=>DONE(i.st)).length, late=its.filter(isLate).length, w=its.filter(i=>/Menunggu/.test(i.st)).length, on=its.filter(i=>i.st==="On proses").length, hold=its.filter(i=>i.st==="Hold").length, subs=o.items.filter(i=>i.j).length, act=its.filter(itemFilter()).length, open=EXP.has(o.no);
     return `<div class="order${open?" open":""}"><span class="o-num">${idx+1}</span><div class="o-main" data-no="${esc(o.no)}" role="button" tabindex="0"><span class="no">${esc(o.no)}${o.ok?`. OK proses ${fmt(o.ok)}`:""}</span><h3>${esc(o.c)}</h3><p>${esc(o.o)}${subs?` <span class="subs">${subs} sub-proses</span>`:""}</p></div>
       <div class="o-side"><div class="prog"><span>${d}/${n} selesai</span><span class="bar"><i style="width:${n?d/n*100:0}%"></i></span></div><div class="o-pills">${late?`<span class="pill s-late">${late} lewat target</span>`:""}${w?`<span class="pill s-menunggu">${w} menunggu</span>`:""}${on?`<span class="pill s-on">${on} on proses</span>`:""}${hold?`<span class="pill s-hold">${hold} hold</span>`:""}</div>
-      ${act?`<button class="o-exp" data-exp="${esc(o.no)}" aria-expanded="${open}">${open?"Tutup":"Lihat "+act+" item berjalan"} <span class="chev">▾</span></button>`:""}</div>
+      ${act?`<button class="o-exp" data-exp="${esc(o.no)}" aria-expanded="${open}">${open?"Tutup":"Lihat "+act+" item "+filterLabel()} <span class="chev">▾</span></button>`:""}</div>
       ${open?`<div class="o-items">${expandHtml(o)}</div>`:""}</div>`; }).join("")||'<p class="hint">Tidak ada order.</p>'}</div>`;
   $("#oq").oninput=e=>{ OF.q=e.target.value; const p=e.target.selectionStart; renderOrders(); const n=$("#oq"); n.focus(); n.setSelectionRange(p,p); };
-  $("#ost").onchange=e=>{ OF.st=e.target.value; renderOrders(); }; $("#opic").onchange=e=>{ OF.pic=e.target.value; renderOrders(); };
+  $("#ost").onchange=e=>{ OF.st=e.target.value; EXP.clear(); if(!["aktif","semua","selesai"].includes(OF.st)) AUTO_EXP=true; renderOrders(); }; $("#opic").onchange=e=>{ OF.pic=e.target.value; renderOrders(); };
   $("#v-orders").querySelectorAll(".o-main[data-no]").forEach(b=>{ b.onclick=()=>openOrder(b.dataset.no); b.onkeydown=e=>{ if(e.key==="Enter") openOrder(b.dataset.no); }; });
   $("#v-orders").querySelectorAll("[data-exp]").forEach(b=>b.onclick=()=>{ const k=b.dataset.exp; EXP.has(k)?EXP.delete(k):EXP.add(k); renderOrders(); });
   $("#v-orders").querySelectorAll("[data-iopen]").forEach(b=>b.onclick=()=>openOrder(b.dataset.iopen));
@@ -586,8 +615,8 @@ function openOrder(no){
     <td><select class="in" data-f="p"${F?" disabled":""}><option value="">–</option>${pics.map(p=>`<option${p===i.p?" selected":""}>${esc(p)}</option>`).join("")}</select></td>
     <td><input class="in" data-f="t" value="${esc(i.t)}" list="places"${dis}></td>
     <td><input class="in" data-f="h" type="number" min="0" value="${i.h??""}"${dis}></td>
-    <td><input class="in" data-f="s" type="date" value="${esc(i.s)}"${dis}></td>
-    <td class="${isLate(i)?"late":""}"><input class="in" data-f="g" type="date" value="${esc(targetOf(i))}"${dis}></td>
+    <td><span class="dwrap"><input class="in dt" data-f="s" value="${dmy(i.s)}" placeholder="ddmmyy" inputmode="numeric" maxlength="10" autocomplete="off"${dis}><button type="button" class="dpick" data-pick title="Pilih dari kalender"${dis}>▾</button><input type="date" class="dhid" tabindex="-1" aria-hidden="true" value="${esc(i.s)}"></span></td>
+    <td class="${isLate(i)?"late":""}"><span class="dwrap"><input class="in dt" data-f="g" value="${dmy(targetOf(i))}" placeholder="ddmmyy" inputmode="numeric" maxlength="10" autocomplete="off"${dis}><button type="button" class="dpick" data-pick title="Pilih dari kalender"${dis}>▾</button><input type="date" class="dhid" tabindex="-1" aria-hidden="true" value="${esc(targetOf(i))}"></span></td>
     <td><select class="in" data-f="st"${dis}>${STATUS.map(s=>`<option${s===i.st?" selected":""}>${esc(s)}</option>`).join("")}</select></td>
     <td><input class="in" data-f="k" value="${esc(i.k)}"${dis}></td>
     <td class="act">${F?"":`<button class="mini add" data-ins="${k}" title="Sisipkan di bawah baris ini">+</button><button class="mini" data-mkj="${k}" title="Jadikan judul sub-proses">▤</button><button class="mini del" data-del="${k}" title="Hapus">🗑</button>`}</td></tr>`; };
@@ -616,8 +645,13 @@ function openOrder(no){
         Object.assign(o,{no:r.no,c:r.c,o:r.o,ok:r.ok}); if(r.note) (DB.hist[r.no]=DB.hist[r.no]||[]).push({d:TODAY,t:nowHM(),no:r.no,x:r.note,by:ME.nama});
         toast("Data order disimpan"); openOrder(r.no); }
       catch(e){ toast(e.message); b.disabled=false; b.textContent="Simpan"; } }; }
+  $("#dB").querySelectorAll(".dwrap").forEach(w=>{ const t=w.querySelector(".dt"), h=w.querySelector(".dhid"), b=w.querySelector("[data-pick]");
+    t.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); t.blur(); } });
+    b.onclick=()=>{ h.value=parseDmy(t.value)||""; try{ h.showPicker(); }catch(_){ h.focus(); h.click(); } };
+    h.addEventListener("change",e=>{ e.stopPropagation(); if(!h.value) return; t.value=dmy(fixYear(h.value)); t.dispatchEvent(new Event("change",{bubbles:true})); }); });
   $("#chainOn").onchange=e=>{ CHAIN=e.target.checked; try{ localStorage.setItem("ct-chain",CHAIN?"1":"0"); }catch(_){} };
   $("#dB").querySelectorAll("tr[data-k]").forEach(tr=>tr.addEventListener("change",async e=>{ const f=e.target.dataset.f, k=+tr.dataset.k, it=o.items[k]; if(!f||e.target.type==="checkbox") return; let v=e.target.value; if(f==="h") v=v?+v:"";
+    if(e.target.classList.contains("dt")){ const iso=parseDmy(v); if(iso===null){ toast("Format tanggal tidak dikenali. Ketik ddmmyy, contoh 300926"); e.target.value=dmy(f==="s"?it.s:targetOf(it)); return; } v=iso; e.target.value=dmy(iso); if(v===(f==="s"?it.s:targetOf(it))) return; }
     const fields={[f]:v}; if((f==="s"||f==="h")&&it.g) fields.g="";
     e.target.disabled=true;
     if(!await saveItem(it,fields,"")){ openOrder(no); return; }
