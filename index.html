@@ -677,7 +677,7 @@ function renderOrders(){
     return true; };
   const list=newestFirst(DB.orders.filter(match));
   if(AUTO_EXP){ AUTO_EXP=false; list.forEach(o=>EXP.add(o.no)); }
-  $("#v-orders").innerHTML=`<div class="head"><div><h1>Order</h1><p>${DB.orders.length} order, ${allItems().length} item dokumen.</p></div>${isField()?"":'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="ordCollect">📊 Collect data report</button><button class="btn pri" id="newOrder">+ Buat order baru</button></div>'}</div>
+  $("#v-orders").innerHTML=`<div class="head"><div><h1>Order</h1><p>${DB.orders.length} order, ${allItems().length} item dokumen.</p></div>${isField()?"":'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="ordCollect">📊 Collect report</button><button class="btn pri" id="newOrder">+ Buat order baru</button></div>'}</div>
   <div class="tools"><input class="in grow" id="oq" placeholder="Cari no. order, perusahaan, atau dokumen" value="${esc(OF.q)}">
     <select class="in" id="ost">${[["aktif","Order aktif"],["late","Ada yang lewat target"],["menunggu","Menunggu persyaratan"],["nopic","Ada item tanpa PIC"],["selesai","Selesai semua"],["semua","Semua order"]].map(([k,l])=>`<option value="${k}"${OF.st===k?" selected":""}>${l}</option>`).join("")}</select>
     <select class="in" id="opic"><option value="">Semua PIC</option>${pics.map(p=>`<option${OF.pic===p?" selected":""}>${esc(p)}</option>`).join("")}</select></div>
