@@ -605,8 +605,7 @@ function initDrag(o,no){
       if(!target) return; const from=+src.dataset.k, to=+target.dataset.k; if(from===to) return;
       const it=o.items.splice(from,1)[0]; let idx=to-(from<to?1:0)+(after?1:0); o.items.splice(idx,0,it);
       FOCUS_ID=null; openOrder(no); const nr=$(`#dB tr[data-k="${idx}"]`); if(nr){ nr.classList.add("flash"); }
-      const ids=o.items.map(x=>x.id);
-      enqueue(async()=>{ try{ await run("reorderItems",no,ids); }catch(err){ toast("Gagal memindahkan: "+err.message.replace(/^KONFLIK:\s*/,"")); await reload(true); refreshOpen(); } }); };
+      enqueue(async()=>{ try{ await run("reorderItems",no,o.items.filter(x=>!x._tmp).map(x=>x.id)); }catch(err){ toast("Gagal memindahkan: "+err.message.replace(/^KONFLIK:\s*/,"")); await reload(true); refreshOpen(); } }); };
     h.addEventListener("pointermove",move); h.addEventListener("pointerup",up); h.addEventListener("pointercancel",up);
   }));
 }
@@ -789,8 +788,17 @@ function openOrder(no){ OPEN_NO=no;
     openOrder(no);
     if(kf&&kk!=null){ const el=$(`#dB tr[data-k="${kk}"] [data-f="${kf}"]`); if(el) el.focus(); } }));
   const afterLastOfGroup=k=>{ let x=k; while(x+1<o.items.length&&!o.items[x+1].j) x++; return x; };
-  const add=async(item,afterIdx,focus)=>{ try{ const afterId=afterIdx!=null&&o.items[afterIdx]?o.items[afterIdx].id:null; const it=await run("addItem",no,item,afterId); if(focus) FOCUS_ID=it.id;
-      if(afterId){ o.items.splice(afterIdx+1,0,it); } else o.items.push(it); openOrder(no); }catch(e){ toast(e.message); } };
+  // tambah item/judul: langsung muncul (optimistis), disimpan ke server di latar belakang
+  const add=(item,afterIdx)=>{
+    const tmp={id:"tmp"+Date.now()+Math.random().toString(36).slice(2,6),no,d:item.d,p:item.p||"",t:"",h:null,s:"",g:"",st:"Belum proses",k:"",u:"",ub:"",j:!!item.j,_tmp:true};
+    const idx=afterIdx!=null?afterIdx+1:o.items.length; o.items.splice(idx,0,tmp); FOCUS_ID=tmp.id; openOrder(no);
+    enqueue(async()=>{ const pos=o.items.indexOf(tmp); if(pos<0) return;   // sudah dihapus sebelum tersimpan
+      const prev=pos>0?o.items[pos-1].id:null;
+      try{ const r=await run("addItem",no,{d:tmp.d,p:tmp.p,t:tmp.t,h:tmp.h,s:tmp.s,g:tmp.g,st:tmp.st,k:tmp.k,j:tmp.j},prev);
+        tmp.id=r.id; tmp.u=r.u; tmp.ub=r.ub; delete tmp._tmp;
+        if(pos===0&&o.items.length>1) await run("reorderItems",no,o.items.filter(x=>!x._tmp).map(x=>x.id));
+        if(tmp._del){ await run("deleteItem",tmp.id); } }
+      catch(e){ const i=o.items.indexOf(tmp); if(i>=0) o.items.splice(i,1); toast("Gagal menambah: "+e.message); refreshOpen(); } }); };
   $("#addItem").onclick=()=>add({d:"Item baru",p:F?ME.nama:""},null);
   if($("#addHead")) $("#addHead").onclick=()=>add({d:"JUDUL SUB-PROSES",j:true},null);
   $("#dB").querySelectorAll("[data-ins]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); const k=+b.dataset.ins, m=$("#insMenu"), r=b.getBoundingClientRect();
@@ -803,9 +811,9 @@ function openOrder(no){ OPEN_NO=no;
     if(await saveItem(it,{j:toJ},"")) toast(toJ?"Dijadikan judul sub-proses":"Dijadikan item biasa"); openOrder(no); });
   $("#dB").querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{ const k=+b.dataset.del, it=o.items[k];
     if(b.dataset.sure!=="1"){ b.dataset.sure="1"; b.textContent="Hapus?"; b.classList.add("sure"); setTimeout(()=>{ if(b.isConnected){ b.dataset.sure=""; b.textContent="🗑"; b.classList.remove("sure"); } },3000); return; }
-    b.disabled=true;
-    try{ await run("deleteItem",it.id); o.items.splice(k,1); (DB.hist[no]=DB.hist[no]||[]).push({d:TODAY,t:nowHM(),no,x:"Item dihapus: "+it.d,by:ME.nama}); toast("Item dihapus"); }catch(e){ toast(e.message); }
-    openOrder(no); });
+    o.items.splice(k,1); (DB.hist[no]=DB.hist[no]||[]).push({d:TODAY,t:nowHM(),no,x:"Item dihapus: "+it.d,by:ME.nama}); toast("Item dihapus"); openOrder(no);
+    if(it._tmp){ it._del=true; return; }   // belum sempat tersimpan: dibatalkan di antrean
+    enqueue(async()=>{ try{ await run("deleteItem",it.id); }catch(e){ o.items.splice(Math.min(k,o.items.length),0,it); toast("Gagal menghapus: "+e.message); refreshOpen(); } }); });
   $("#hAdd").onclick=async()=>{ const t=$("#hIn").value.trim(); if(!t) return; try{ const r=await run("addHistory",no,t); (DB.hist[no]=DB.hist[no]||[]).push(r); openOrder(no); toast("Riwayat ditambahkan"); }catch(e){ toast(e.message); } };
   $("#dlg").classList.add("wide");
   if(!$("#dlg").open) $("#dlg").showModal();
