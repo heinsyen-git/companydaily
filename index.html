@@ -160,6 +160,8 @@ body.syncing .top .mark::after{content:"";position:absolute;right:-3px;top:-3px;
 .sys{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--bg)}
 .sys-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .idlebar{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:70;background:var(--warn-soft);border:1px solid var(--warn);color:var(--ink);border-radius:12px;padding:10px 14px;display:flex;gap:12px;align-items:center;box-shadow:0 8px 24px rgba(10,16,28,.18);font-size:14px;max-width:92vw}
+.savechip{font-size:12px;font-weight:700;color:var(--warn);background:var(--warn-soft);border-radius:99px;padding:4px 10px;white-space:nowrap}
+.savechip.ok{color:var(--ok);background:var(--ok-soft)}
 [hidden]{display:none!important}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
 .top-in{max-width:1180px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -284,6 +286,7 @@ table.t{border-collapse:collapse;width:100%;font-size:13px;min-width:1180px}
   <header class="top"><div class="top-in">
     <div class="brand"><div class="mark">CT</div>Company Team</div>
     <nav class="tabs" id="tabs"></nav>
+    <span class="savechip" id="saveChip" hidden></span>
     <button class="me" id="meBtn" title="Pengaturan"><span class="av" id="meAv"></span><span><b id="meName"></b><small id="meRole"></small></span></button>
   </div></header>
   <main>
@@ -394,7 +397,7 @@ async function reload(quiet){ syncing(true);
   try{ const d=await run("getAll"); build(d); ME=d.me; saveCache(d); if(!quiet) $("#loading").hidden=true; return true; }
   catch(e){ if(!/^LOGIN:/.test(e.message)&&!quiet) $("#loading").textContent="Gagal memuat: "+e.message; else if(quiet&&!/^LOGIN:/.test(e.message)) toast("Gagal memperbarui data: "+e.message); return false; }
   finally{ syncing(false); } }
-const busy=()=>$("#dlg").open||$("#setDlg").open||(document.activeElement&&document.activeElement.matches("input,select,textarea"));
+const busy=()=>(typeof SQ!=="undefined"&&(SQ.length||SQRUN))||$("#dlg").open||$("#setDlg").open||(document.activeElement&&document.activeElement.matches("input,select,textarea"));
 const allItems=()=>DB.orders.flatMap(o=>o.items.filter(i=>!i.j).map(i=>({o,i})));
 const PICS=()=>DB.users.filter(u=>u.role!=="Manager").map(u=>u.nama);
 const today=()=>DB.updates.filter(u=>u.date===TODAY);
@@ -546,13 +549,38 @@ function copy(t){ const fb=()=>{ const a=document.createElement("textarea"); a.v
   navigator.clipboard?navigator.clipboard.writeText(t).then(()=>toast("Teks disalin"),fb):fb(); }
 
 /* ---------- update item ke server ---------- */
-async function saveItem(it,fields,note){
-  try{ const r=await run("updateItem",it.id,fields,note||"",it.u);
-    Object.assign(it,r.item);
-    if(r.update){ DB.updates.push(r.update); const o=DB.orders.find(x=>x.no===it.no); (DB.hist[it.no]=DB.hist[it.no]||[]).push({d:TODAY,t:nowHM(),no:it.no,x:`${it.d}: ${r.update.from!==r.update.to?r.update.from+" → "+r.update.to:r.update.to}${r.update.note?". "+r.update.note:""}`,by:ME.nama}); }
-    return true;
-  }catch(e){ toast(e.message.replace(/^KONFLIK:\s*/,"")); if(/^KONFLIK/.test(e.message)){ await reload(true); } return false; }
+/* simpan langsung tampil (optimistis): perubahan muncul seketika, dikirim ke server di latar belakang secara berurutan */
+const SQ=[]; let SQRUN=false;
+function saveState(){ const n=SQ.length+(SQRUN?1:0); document.body.classList.toggle("saving",n>0); const el=$("#saveChip"); if(!el) return;
+  if(n>0){ el.hidden=false; el.className="savechip"; el.textContent="Menyimpan "+n+" perubahan…"; }
+  else if(!el.hidden&&el.className==="savechip"){ el.className="savechip ok"; el.textContent="Tersimpan ✓"; clearTimeout(el._t); el._t=setTimeout(()=>{ el.hidden=true; },1600); } }
+function enqueue(job){ SQ.push(job); saveState(); pumpQ(); }
+async function pumpQ(){ if(SQRUN) return; SQRUN=true;
+  while(SQ.length){ const job=SQ.shift(); saveState(); try{ await job(); }catch(e){} }
+  SQRUN=false; saveState(); }
+addEventListener("beforeunload",e=>{ if(SQ.length||SQRUN){ e.preventDefault(); e.returnValue=""; } });
+function saveItem(it,fields,note){
+  const before={}; Object.keys(fields).forEach(k=>before[k]=it[k]);
+  const from=it.st; Object.assign(it,fields);                       // tampil seketika
+  let localUpd=null;
+  if((fields.st&&fields.st!==from)||String(note||"").trim()){
+    localUpd={id:"tmp"+Date.now(),date:TODAY,time:nowHM(),by:ME.nama,type:"Item",no:it.no,c:(DB.orders.find(x=>x.no===it.no)||{}).c||"",itemId:it.id,item:it.d,from,to:it.st,note:String(note||"").trim()};
+    DB.updates.push(localUpd); (DB.hist[it.no]=DB.hist[it.no]||[]).push({d:TODAY,t:nowHM(),no:it.no,x:`${it.d}: ${from!==it.st?from+" → "+it.st:it.st}${localUpd.note?". "+localUpd.note:""}`,by:ME.nama,_tmp:localUpd.id}); }
+  enqueue(async()=>{
+    try{ const r=await run("updateItem",it.id,fields,note||"",it.u); Object.assign(it,r.item); if(localUpd&&r.update) Object.assign(localUpd,r.update); }
+    catch(e){ Object.assign(it,before); if(localUpd){ DB.updates=DB.updates.filter(x=>x!==localUpd); DB.hist[it.no]=(DB.hist[it.no]||[]).filter(h=>h._tmp!==localUpd.id); }
+      toast("Gagal menyimpan: "+e.message.replace(/^KONFLIK:\s*/,"")); if(/^KONFLIK/.test(e.message)) await reload(true); if(!busy()||$("#dlg").open) refreshOpen(); }
+  });
+  return true;
 }
+function saveItems(changes){ // tanggal berantai
+  const before=changes.map(c=>({it:c.it,old:{s:c.old.s,g:c.old.g}}));
+  enqueue(async()=>{ try{ const res=await run("updateItems",changes.map(c=>({id:c.it.id,fields:c.fields,base:c.it.u})));
+      res.forEach(r=>{ const t=changes.find(c=>c.it.id===r.id); if(t) Object.assign(t.it,r); }); }
+    catch(e){ before.forEach(b=>Object.assign(b.it,b.old)); toast("Gagal menyimpan tanggal berantai: "+e.message.replace(/^KONFLIK:\s*/,"")); if(/^KONFLIK/.test(e.message)) await reload(true); refreshOpen(); } });
+}
+let OPEN_NO=null;
+function refreshOpen(){ if($("#dlg").open&&OPEN_NO&&DB.orders.some(o=>o.no===OPEN_NO)) openOrder(OPEN_NO); else rerender(); }
 
 /* ---------- laporan saya ---------- */
 let MF="aktif";
@@ -580,7 +608,7 @@ function renderMine(){
   v.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{ MF=b.dataset.f; renderMine(); });
   v.querySelectorAll("[data-save]").forEach(b=>b.onclick=async()=>{ const card=b.closest(".it"), x=allItems().find(y=>y.i.id===card.dataset.id), to=card.querySelector("[data-new]").value, note=card.querySelector("[data-note]").value.trim();
     if(to===x.i.st&&!note){ toast("Ubah status atau tulis progres dulu"); return; }
-    b.disabled=true; b.textContent="Menyimpan…"; if(await saveItem(x.i,to!==x.i.st?{st:to}:{},note)) toast("Update tersimpan"); renderMine(); });
+    saveItem(x.i,to!==x.i.st?{st:to}:{},note); toast("Update dicatat"); renderMine(); });
   const addEx=async()=>{ const t=$("#exIn").value.trim(); if(!t) return; try{ DB.updates.push(await run("addExtra",t)); renderMine(); }catch(e){ toast(e.message); } };
   $("#exAdd").onclick=addEx; $("#exIn").onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); addEx(); } };
   v.querySelectorAll("[data-exdel]").forEach(b=>b.onclick=async()=>{ try{ await run("delExtra",b.dataset.exdel); DB.updates=DB.updates.filter(u=>u.id!==b.dataset.exdel); renderMine(); }catch(e){ toast(e.message); } });
@@ -663,11 +691,11 @@ function chainFrom(o,k){
   for(let x=k+1;x<o.items.length;x++){ const it=o.items[x]; if(it.j) break;
     const t=targetOf(prev); if(!t) break;
     if(DONE(it.st)&&it.s){ prev=it; continue; }
-    if(it.s!==t||it.g){ ch.push({it,fields:{s:t,g:""}}); it.s=t; it.g=""; }
+    if(it.s!==t||it.g){ ch.push({it,fields:{s:t,g:""},old:{s:it.s,g:it.g}}); it.s=t; it.g=""; }
     prev=it; }
   return ch;
 }
-function openOrder(no){
+function openOrder(no){ OPEN_NO=no;
   const o=DB.orders.find(x=>x.no===no), pics=PICS(), F=isField();
   $("#dT").textContent=o.c; $("#dS").textContent=`No. order ${o.no}. ${o.o}${o.ok?". OK proses "+fmt(o.ok):""}`;
   const h=(DB.hist[no]||[]).slice().sort((a,b)=>(b.d+" "+(b.t||"")).localeCompare(a.d+" "+(a.t||"")));
@@ -721,13 +749,11 @@ function openOrder(no){
   $("#dB").querySelectorAll("tr[data-k]").forEach(tr=>tr.addEventListener("change",async e=>{ const f=e.target.dataset.f, k=+tr.dataset.k, it=o.items[k]; if(!f||e.target.type==="checkbox") return; let v=e.target.value; if(f==="h") v=v?+v:"";
     if(e.target.classList.contains("dt")){ const iso=parseDmy(v); if(iso===null){ toast("Format tanggal tidak dikenali. Ketik ddmmyy, contoh 300926"); e.target.value=dmy(f==="s"?it.s:targetOf(it)); return; } v=iso; e.target.value=dmy(iso); if(v===(f==="s"?it.s:targetOf(it))) return; }
     const fields={[f]:v}; if((f==="s"||f==="h")&&it.g) fields.g="";
-    e.target.disabled=true;
-    if(!await saveItem(it,fields,"")){ openOrder(no); return; }
-    if(CHAIN&&(f==="s"||f==="h"||f==="g")){ const ch=chainFrom(o,k);
-      if(ch.length){ try{ const res=await run("updateItems",ch.map(c=>({id:c.it.id,fields:c.fields,base:c.it.u})));
-          res.forEach(r=>{ const t=o.items.find(x=>x.id===r.id); if(t) Object.assign(t,r); }); toast(`Tgl submit ${ch.length} item berikutnya ikut disesuaikan`); }
-        catch(err){ toast(err.message.replace(/^KONFLIK:\s*/,"")); await reload(true); } } }
-    openOrder(no); }));
+    saveItem(it,fields,"");
+    if(CHAIN&&(f==="s"||f==="h"||f==="g")){ const ch=chainFrom(o,k); if(ch.length){ saveItems(ch); toast(`Tgl submit ${ch.length} item berikutnya ikut disesuaikan`); } }
+    const keep=document.activeElement&&document.activeElement.closest?document.activeElement:null, kf=keep&&keep.dataset?keep.dataset.f:null, kk=keep&&keep.closest("tr[data-k]")?keep.closest("tr[data-k]").dataset.k:null;
+    openOrder(no);
+    if(kf&&kk!=null){ const el=$(`#dB tr[data-k="${kk}"] [data-f="${kf}"]`); if(el) el.focus(); } }));
   const afterLastOfGroup=k=>{ let x=k; while(x+1<o.items.length&&!o.items[x+1].j) x++; return x; };
   const add=async(item,afterIdx,focus)=>{ try{ const afterId=afterIdx!=null&&o.items[afterIdx]?o.items[afterIdx].id:null; const it=await run("addItem",no,item,afterId); if(focus) FOCUS_ID=it.id;
       if(afterId){ o.items.splice(afterIdx+1,0,it); } else o.items.push(it); openOrder(no); }catch(e){ toast(e.message); } };
