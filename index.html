@@ -169,6 +169,8 @@ body.is-dragging,body.is-dragging *{cursor:grabbing!important;user-select:none}
 .t tr.dragging td{opacity:.45}
 .t tr.drop-before td{box-shadow:inset 0 3px 0 var(--pri)}
 .t tr.drop-after td{box-shadow:inset 0 -3px 0 var(--pri)}
+.dprev{position:absolute;z-index:61;background:#172033;color:#fff;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 6px 18px rgba(10,16,28,.25);pointer-events:none}
+.dprev .dp-ok{color:#fff}.dprev .dp-bad{color:#F6B4B4}.dprev .dp-hint{color:#C9D3DF}.dprev .dp-hint b{color:#fff}
 [hidden]{display:none!important}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
 .top-in{max-width:1180px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -336,7 +338,7 @@ table.t{border-collapse:collapse;width:100%;font-size:13px;min-width:1180px}
   </section>
   <hr style="border:0;border-top:1px solid var(--line);margin:16px 0"><button class="btn" id="logout" style="color:var(--bad)">Keluar</button>
 </div></dialog>
-<dialog id="dlg"><div class="dh"><div><h3 id="dT"></h3><small id="dS"></small></div><button class="x" id="dX" aria-label="Tutup">×</button></div><div class="db" id="dB"></div><div class="insmenu" id="insMenu" hidden></div></dialog>
+<dialog id="dlg"><div class="dh"><div><h3 id="dT"></h3><small id="dS"></small></div><button class="x" id="dX" aria-label="Tutup">×</button></div><div class="db" id="dB"></div><div class="insmenu" id="insMenu" hidden></div><div class="dprev" id="dPrev" hidden></div></dialog>
 <div class="idlebar" id="idleBar" hidden><span id="idleTxt"></span><button class="btn sm pri" id="idleStay">Tetap masuk</button></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -358,7 +360,11 @@ const fmtHist=(d,t)=>{ if(!d) return "–"; const p=String(d).split("-"); if(p.l
 /* tanggal: tampil dd/mm/yy, bisa diketik ddmmyy / ddmmyyyy / dd-mm-yy / dd/mm/yyyy */
 const fixYear=iso=>{ const m=String(iso||"").match(/^(\d{1,4})-(\d{2})-(\d{2})$/); if(!m) return iso; let y=+m[1]; if(y<100) y+=2000; return y+"-"+m[2]+"-"+m[3]; };
 const dmy=iso=>{ const m=String(iso||"").match(/^(\d{4})-(\d{2})-(\d{2})$/); return m?m[3]+"/"+m[2]+"/"+m[1].slice(2):""; };
+const BLN_IDX={jan:1,feb:2,mar:3,apr:4,mei:5,may:5,jun:6,jul:7,agu:8,agt:8,aug:8,sep:9,okt:10,oct:10,nov:11,des:12,dec:12};
+const dmyShow=iso=>{ const m=String(iso||"").match(/^(\d{4})-(\d{2})-(\d{2})$/); return m?m[3]+" "+BLN[+m[2]-1]+" "+m[1]:""; };
 function parseDmy(v){ v=String(v||"").trim(); if(!v) return "";
+  const nm=v.match(/^(\d{1,2})[\s\/.\-]*([A-Za-z]{3,})[\s\/.\-]*(\d{2,4})?$/);
+  if(nm){ const mo=BLN_IDX[nm[2].slice(0,3).toLowerCase()]; if(!mo) return null; let y=nm[3]?+nm[3]:new Date().getFullYear(); if(y<100) y+=2000; const d=+nm[1], dt=new Date(y,mo-1,d); if(dt.getMonth()!==mo-1||dt.getDate()!==d) return null; return y+"-"+pad(mo)+"-"+pad(d); }
   let d,m,y; const p=v.split(/[\/.\-\s]+/).filter(Boolean);
   if(p.length===3){ [d,m,y]=p; } else { const n=v.replace(/\D/g,""); if(n.length===6){ d=n.slice(0,2); m=n.slice(2,4); y=n.slice(4); } else if(n.length===8){ d=n.slice(0,2); m=n.slice(2,4); y=n.slice(4); } else if(n.length===4){ d=n.slice(0,2); m=n.slice(2,4); y=String(new Date().getFullYear()); } else return null; }
   d=+d; m=+m; y=+y; if(y<100) y+=2000; const dt=new Date(y,m-1,d);
@@ -504,7 +510,7 @@ function renderDash(){
     return `<div class="r"><div><b>${esc(p)}</b><small>${u.filter(x=>x.type==="Item").length} update item${u.some(x=>x.type==="Lainnya")?`, ${u.filter(x=>x.type==="Lainnya").length} aktivitas lain`:""}</small></div><div style="display:flex;gap:8px;align-items:center">${sent?`<span class="pill s-selesai">Terkirim ${esc(sent)}</span>`:u.length?'<span class="pill s-menunggu">Belum dikirim</span>':'<span class="pill s-belum">Belum ada laporan</span>'}${u.length?`<button class="btn sm" data-pic="${esc(p)}">Lihat</button>`:""}</div></div>`; }).join("");
   $("#v-dash").innerHTML=`
   <div class="head"><div><h1>Dashboard Company Team</h1><p>${fmtLong(TODAY)}. Data langsung dari Google Sheets.</p></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="btnRef">Muat ulang</button><button class="btn" id="btnCollect">📊 Collect report</button><button class="btn pri" id="btnRep">Laporan ke Manager</button></div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="btnRef">Muat ulang</button><button class="btn" id="btnCollect">📊 Collect data report</button><button class="btn pri" id="btnRep">Laporan ke Manager</button></div></div>
   <div class="kpis">
     <button class="kpi" data-go="aktif"><b>${S.orders}</b><span>order aktif</span></button>
     <button class="kpi" data-go="aktif"><b>${S.act.length}</b><span>item dokumen berjalan</span></button>
@@ -587,6 +593,13 @@ function saveItems(changes){ // tanggal berantai
     catch(e){ before.forEach(b=>Object.assign(b.it,b.old)); toast("Gagal menyimpan tanggal berantai: "+e.message.replace(/^KONFLIK:\s*/,"")); if(/^KONFLIK/.test(e.message)) await reload(true); refreshOpen(); } });
 }
 let OPEN_NO=null;
+/* pratinjau tanggal saat mengetik: tampil hari, tanggal, nama bulan, dan tahun */
+function datePreview(t){ const p=$("#dPrev"); if(!p) return; const v=t.value.trim();
+  if(!v){ p.innerHTML='<span class="dp-hint">Ketik ddmmyy, contoh <b>171126</b></span>'; }
+  else { const iso=parseDmy(v);
+    p.innerHTML=iso===null?'<span class="dp-bad">Tanggal belum lengkap / tidak valid</span>':iso?`<span class="dp-ok">${esc(fmtLong(iso))}</span>`:""; }
+  p.hidden=false; const d=$("#dlg").getBoundingClientRect(), r=t.getBoundingClientRect();
+  p.style.top=(r.bottom-d.top+4)+"px"; p.style.left=Math.max(8,Math.min(r.left-d.left,d.width-p.offsetWidth-8))+"px"; }
 /* seret baris (mouse & sentuh) untuk mengatur urutan item dan judul sub-proses */
 function initDrag(o,no){
   const tb=$("#dB table.t.fit"), box=$("#dlg .db"); if(!tb) return;
@@ -677,7 +690,7 @@ function renderOrders(){
     return true; };
   const list=newestFirst(DB.orders.filter(match));
   if(AUTO_EXP){ AUTO_EXP=false; list.forEach(o=>EXP.add(o.no)); }
-  $("#v-orders").innerHTML=`<div class="head"><div><h1>Order</h1><p>${DB.orders.length} order, ${allItems().length} item dokumen.</p></div>${isField()?"":'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="ordCollect">📊 Collect report</button><button class="btn pri" id="newOrder">+ Buat order baru</button></div>'}</div>
+  $("#v-orders").innerHTML=`<div class="head"><div><h1>Order</h1><p>${DB.orders.length} order, ${allItems().length} item dokumen.</p></div>${isField()?"":'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="ordCollect">📊 Collect data report</button><button class="btn pri" id="newOrder">+ Buat order baru</button></div>'}</div>
   <div class="tools"><input class="in grow" id="oq" placeholder="Cari no. order, perusahaan, atau dokumen" value="${esc(OF.q)}">
     <select class="in" id="ost">${[["aktif","Order aktif"],["late","Ada yang lewat target"],["menunggu","Menunggu persyaratan"],["nopic","Ada item tanpa PIC"],["selesai","Selesai semua"],["semua","Semua order"]].map(([k,l])=>`<option value="${k}"${OF.st===k?" selected":""}>${l}</option>`).join("")}</select>
     <select class="in" id="opic"><option value="">Semua PIC</option>${pics.map(p=>`<option${OF.pic===p?" selected":""}>${esc(p)}</option>`).join("")}</select></div>
@@ -734,8 +747,8 @@ function openOrder(no){ OPEN_NO=no;
     <td><input class="in" data-f="p" list="picList" value="${esc(i.p)}" placeholder="Ketik nama PIC" autocomplete="off"${F?" disabled":""}></td>
     <td><input class="in" data-f="t" value="${esc(i.t)}" list="places"${dis}></td>
     <td><input class="in" data-f="h" type="number" min="0" value="${i.h??""}"${dis}></td>
-    <td><span class="dwrap"><input class="in dt" data-f="s" value="${dmy(i.s)}" placeholder="ddmmyy" inputmode="numeric" maxlength="10" autocomplete="off"${dis}><button type="button" class="dpick" data-pick title="Pilih dari kalender"${dis}>▾</button><input type="date" class="dhid" tabindex="-1" aria-hidden="true" value="${esc(i.s)}"></span></td>
-    <td class="${isLate(i)?"late":""}"><span class="dwrap"><input class="in dt" data-f="g" value="${dmy(targetOf(i))}" placeholder="ddmmyy" inputmode="numeric" maxlength="10" autocomplete="off"${dis}><button type="button" class="dpick" data-pick title="Pilih dari kalender"${dis}>▾</button><input type="date" class="dhid" tabindex="-1" aria-hidden="true" value="${esc(targetOf(i))}"></span></td>
+    <td><span class="dwrap"><input class="in dt" data-f="s" value="${dmyShow(i.s)}" placeholder="ddmmyy" maxlength="20" autocomplete="off"${dis}><button type="button" class="dpick" data-pick title="Pilih dari kalender"${dis}>▾</button><input type="date" class="dhid" tabindex="-1" aria-hidden="true" value="${esc(i.s)}"></span></td>
+    <td class="${isLate(i)?"late":""}"><span class="dwrap"><input class="in dt" data-f="g" value="${dmyShow(targetOf(i))}" placeholder="ddmmyy" maxlength="20" autocomplete="off"${dis}><button type="button" class="dpick" data-pick title="Pilih dari kalender"${dis}>▾</button><input type="date" class="dhid" tabindex="-1" aria-hidden="true" value="${esc(targetOf(i))}"></span></td>
     <td><select class="in" data-f="st"${dis}>${STATUS.map(s=>`<option${s===i.st?" selected":""}>${esc(s)}</option>`).join("")}</select></td>
     <td><input class="in" data-f="k" value="${esc(i.k)}"${dis}></td>
     <td class="act">${F?"":`<button class="mini add" data-ins="${k}" title="Sisipkan di bawah baris ini">+</button><button class="mini" data-mkj="${k}" title="Jadikan judul sub-proses">▤</button><button class="mini del" data-del="${k}" title="Hapus">🗑</button>`}</td></tr>`; };
@@ -772,14 +785,15 @@ function openOrder(no){ OPEN_NO=no;
         toast("Data order disimpan"); openOrder(r.no); }
       catch(e){ toast(e.message); b.disabled=false; b.textContent="Simpan"; } }; }
   $("#dB").querySelectorAll(".dwrap").forEach(w=>{ const t=w.querySelector(".dt"), h=w.querySelector(".dhid"), b=w.querySelector("[data-pick]");
+    t.addEventListener("focus",()=>{ t.select(); datePreview(t); }); t.addEventListener("input",()=>datePreview(t)); t.addEventListener("blur",()=>{ const p=$("#dPrev"); if(p) p.hidden=true; });
     t.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); t.blur(); } });
     b.onclick=()=>{ h.value=parseDmy(t.value)||""; try{ h.showPicker(); }catch(_){ h.focus(); h.click(); } };
-    h.addEventListener("change",e=>{ e.stopPropagation(); if(!h.value) return; t.value=dmy(fixYear(h.value)); t.dispatchEvent(new Event("change",{bubbles:true})); }); });
+    h.addEventListener("change",e=>{ e.stopPropagation(); if(!h.value) return; t.value=dmyShow(fixYear(h.value)); t.dispatchEvent(new Event("change",{bubbles:true})); }); });
   $("#dB").querySelectorAll('input[data-f="p"]').forEach(inp=>inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); inp.blur(); } }));
   if(!F) initDrag(o,no);
   $("#chainOn").onchange=e=>{ CHAIN=e.target.checked; try{ localStorage.setItem("ct-chain",CHAIN?"1":"0"); }catch(_){} };
   $("#dB").querySelectorAll("tr[data-k]").forEach(tr=>tr.addEventListener("change",async e=>{ const f=e.target.dataset.f, k=+tr.dataset.k, it=o.items[k]; if(!f||e.target.type==="checkbox") return; let v=e.target.value; if(f==="h") v=v?+v:"";
-    if(e.target.classList.contains("dt")){ const iso=parseDmy(v); if(iso===null){ toast("Format tanggal tidak dikenali. Ketik ddmmyy, contoh 300926"); e.target.value=dmy(f==="s"?it.s:targetOf(it)); return; } v=iso; e.target.value=dmy(iso); if(v===(f==="s"?it.s:targetOf(it))) return; }
+    if(e.target.classList.contains("dt")){ const iso=parseDmy(v); if(iso===null){ toast("Format tanggal tidak dikenali. Ketik ddmmyy, contoh 300926"); e.target.value=dmyShow(f==="s"?it.s:targetOf(it)); return; } v=iso; e.target.value=dmyShow(iso); if(v===(f==="s"?it.s:targetOf(it))) return; }
     if(f==="p"){ v=String(v).trim().replace(/\s+/g," "); const m=PICS().find(x=>x.toLowerCase()===v.toLowerCase()); if(m) v=m; e.target.value=v; if(v===(it.p||"")) return; }
     const fields={[f]:v}; if((f==="s"||f==="h")&&it.g) fields.g="";
     saveItem(it,fields,"");
