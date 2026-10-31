@@ -162,6 +162,13 @@ body.syncing .top .mark::after{content:"";position:absolute;right:-3px;top:-3px;
 .idlebar{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:70;background:var(--warn-soft);border:1px solid var(--warn);color:var(--ink);border-radius:12px;padding:10px 14px;display:flex;gap:12px;align-items:center;box-shadow:0 8px 24px rgba(10,16,28,.18);font-size:14px;max-width:92vw}
 .savechip{font-size:12px;font-weight:700;color:var(--warn);background:var(--warn-soft);border-radius:99px;padding:4px 10px;white-space:nowrap}
 .savechip.ok{color:var(--ok);background:var(--ok-soft)}
+.dcell{display:flex;align-items:center;gap:4px}.dcell .in{flex:1;min-width:0}
+.drag{cursor:grab;touch-action:none;user-select:none;color:var(--muted);font-weight:800;letter-spacing:-2px;padding:6px 4px;border-radius:6px;line-height:1;flex:none}
+.drag:hover{background:var(--soft);color:var(--pri)}
+body.is-dragging,body.is-dragging *{cursor:grabbing!important;user-select:none}
+.t tr.dragging td{opacity:.45}
+.t tr.drop-before td{box-shadow:inset 0 3px 0 var(--pri)}
+.t tr.drop-after td{box-shadow:inset 0 -3px 0 var(--pri)}
 [hidden]{display:none!important}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
 .top-in{max-width:1180px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -580,6 +587,29 @@ function saveItems(changes){ // tanggal berantai
     catch(e){ before.forEach(b=>Object.assign(b.it,b.old)); toast("Gagal menyimpan tanggal berantai: "+e.message.replace(/^KONFLIK:\s*/,"")); if(/^KONFLIK/.test(e.message)) await reload(true); refreshOpen(); } });
 }
 let OPEN_NO=null;
+/* seret baris (mouse & sentuh) untuk mengatur urutan item dan judul sub-proses */
+function initDrag(o,no){
+  const tb=$("#dB table.t.fit"), box=$("#dlg .db"); if(!tb) return;
+  tb.querySelectorAll(".drag").forEach(h=>h.addEventListener("pointerdown",e=>{
+    if(e.button>0) return; e.preventDefault();
+    const src=h.closest("tr"); let target=null, after=false, scrollT=null, lastY=e.clientY;
+    src.classList.add("dragging"); document.body.classList.add("is-dragging"); try{ h.setPointerCapture(e.pointerId); }catch(_){}
+    const clear=()=>tb.querySelectorAll(".drop-before,.drop-after").forEach(x=>x.classList.remove("drop-before","drop-after"));
+    const mark=y=>{ clear(); target=null; const el=document.elementFromPoint(e.clientX||40,y); const tr=el&&el.closest&&el.closest("tr[data-k]");
+      if(tr&&tr!==src&&tb.contains(tr)){ const r=tr.getBoundingClientRect(); after=y>r.top+r.height/2; tr.classList.add(after?"drop-after":"drop-before"); target=tr; } };
+    const auto=()=>{ const r=box.getBoundingClientRect(); const d=lastY<r.top+50?-14:lastY>r.bottom-50?14:0; if(d){ box.scrollTop+=d; mark(lastY); } scrollT=requestAnimationFrame(auto); };
+    scrollT=requestAnimationFrame(auto);
+    const move=ev=>{ lastY=ev.clientY; mark(ev.clientY); };
+    const up=()=>{ h.removeEventListener("pointermove",move); h.removeEventListener("pointerup",up); h.removeEventListener("pointercancel",up); cancelAnimationFrame(scrollT);
+      src.classList.remove("dragging"); document.body.classList.remove("is-dragging"); clear();
+      if(!target) return; const from=+src.dataset.k, to=+target.dataset.k; if(from===to) return;
+      const it=o.items.splice(from,1)[0]; let idx=to-(from<to?1:0)+(after?1:0); o.items.splice(idx,0,it);
+      FOCUS_ID=null; openOrder(no); const nr=$(`#dB tr[data-k="${idx}"]`); if(nr){ nr.classList.add("flash"); }
+      const ids=o.items.map(x=>x.id);
+      enqueue(async()=>{ try{ await run("reorderItems",no,ids); }catch(err){ toast("Gagal memindahkan: "+err.message.replace(/^KONFLIK:\s*/,"")); await reload(true); refreshOpen(); } }); };
+    h.addEventListener("pointermove",move); h.addEventListener("pointerup",up); h.addEventListener("pointercancel",up);
+  }));
+}
 function refreshOpen(){ if($("#dlg").open&&OPEN_NO&&DB.orders.some(o=>o.no===OPEN_NO)) openOrder(OPEN_NO); else rerender(); }
 
 /* ---------- laporan saya ---------- */
@@ -636,7 +666,7 @@ function expandHtml(o){ let head="", list=[]; const keep=itemFilter();
   return (list.length&&!all?`<div class="oi-cap">Item saat ini</div>`:"")+html
     +`<div class="oi-foot">${rest>0?`<button class="btn sm" data-iall="${esc(o.no)}">+ ${rest} item berikutnya</button>`:all&&list.length>1?`<button class="btn sm" data-iall="${esc(o.no)}">Tampilkan item saat ini saja</button>`:""}<button class="btn sm" data-iopen="${esc(o.no)}">Buka detail order</button></div>`; }
 function renderOrders(){
-  const pics=PICS();
+  const pics=[...new Set([...PICS(),...allItems().map(x=>x.i.p).filter(Boolean)])];
   const match=o=>{ const its=realItems(o);
     if(OF.q&&!(o.no+" "+o.c+" "+o.o+" "+o.items.map(i=>i.d).join(" ")).toLowerCase().includes(OF.q.toLowerCase())) return false;
     if(OF.pic&&!its.some(i=>i.p===OF.pic)) return false;
@@ -700,9 +730,9 @@ function openOrder(no){ OPEN_NO=no;
   $("#dT").textContent=o.c; $("#dS").textContent=`No. order ${o.no}. ${o.o}${o.ok?". OK proses "+fmt(o.ok):""}`;
   const h=(DB.hist[no]||[]).slice().sort((a,b)=>(b.d+" "+(b.t||"")).localeCompare(a.d+" "+(a.t||"")));
   const can=i=>!F||i.p===ME.nama;
-  const row=(i,k)=>{ if(i.j) return `<tr class="hd" data-k="${k}"><td colspan="8"><div class="hdw"><span class="hd-ic">▸</span><input class="in hd-in" data-f="d" value="${esc(i.d)}"${F?" disabled":""}></div></td><td class="act">${F?"":`<button class="mini add" data-ins="${k}" title="Sisipkan di bawah baris ini">+</button><button class="mini" data-unj="${k}" title="Jadikan item biasa">↺</button><button class="mini del" data-del="${k}" title="Hapus">🗑</button>`}</td></tr>`;
-    const dis=can(i)?"":" disabled"; return `<tr data-k="${k}"><td><input class="in" data-f="d" value="${esc(i.d)}"${F?" disabled":""}></td>
-    <td><select class="in" data-f="p"${F?" disabled":""}><option value="">–</option>${pics.map(p=>`<option${p===i.p?" selected":""}>${esc(p)}</option>`).join("")}</select></td>
+  const row=(i,k)=>{ if(i.j) return `<tr class="hd" data-k="${k}"><td colspan="8"><div class="hdw">${F?"":'<span class="drag" title="Seret untuk memindahkan" aria-label="Pindahkan">⋮⋮</span>'}<span class="hd-ic">▸</span><input class="in hd-in" data-f="d" value="${esc(i.d)}"${F?" disabled":""}></div></td><td class="act">${F?"":`<button class="mini add" data-ins="${k}" title="Sisipkan di bawah baris ini">+</button><button class="mini" data-unj="${k}" title="Jadikan item biasa">↺</button><button class="mini del" data-del="${k}" title="Hapus">🗑</button>`}</td></tr>`;
+    const dis=can(i)?"":" disabled"; return `<tr data-k="${k}"><td><div class="dcell">${F?"":'<span class="drag" title="Seret untuk memindahkan" aria-label="Pindahkan">⋮⋮</span>'}<input class="in" data-f="d" value="${esc(i.d)}"${F?" disabled":""}></div></td>
+    <td><input class="in" data-f="p" list="picList" value="${esc(i.p)}" placeholder="Ketik nama PIC" autocomplete="off"${F?" disabled":""}></td>
     <td><input class="in" data-f="t" value="${esc(i.t)}" list="places"${dis}></td>
     <td><input class="in" data-f="h" type="number" min="0" value="${i.h??""}"${dis}></td>
     <td><span class="dwrap"><input class="in dt" data-f="s" value="${dmy(i.s)}" placeholder="ddmmyy" inputmode="numeric" maxlength="10" autocomplete="off"${dis}><button type="button" class="dpick" data-pick title="Pilih dari kalender"${dis}>▾</button><input type="date" class="dhid" tabindex="-1" aria-hidden="true" value="${esc(i.s)}"></span></td>
@@ -722,6 +752,7 @@ function openOrder(no){ OPEN_NO=no;
   <div class="tw"><table class="t fit"><colgroup><col style="width:20.5%"><col style="width:9.5%"><col style="width:10%"><col style="width:5.5%"><col style="width:11%"><col style="width:11%"><col style="width:12.5%"><col style="width:12.5%"><col style="width:7.5%"></colgroup>
   <tr><th>Dokumen / proses</th><th>PIC</th><th>Tempat proses</th><th title="Lama (hari kerja)">Lama (hr)</th><th>Tgl submit</th><th>Target selesai</th><th>Status</th><th>Keterangan</th><th></th></tr>
   ${o.items.map(row).join("")}</table></div>
+  <datalist id="picList">${[...new Set([...pics,...allItems().map(x=>x.i.p).filter(Boolean)])].map(p=>`<option value="${esc(p)}">`).join("")}</datalist>
   <datalist id="places">${[...new Set(allItems().map(x=>x.i.t).filter(Boolean))].map(p=>`<option value="${esc(p)}">`).join("")}</datalist>
   <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn sm" id="addItem">+ Tambah item</button>${F?"":'<button class="btn sm" id="addHead">+ Tambah judul sub-proses</button>'}</div>
   <h3 style="font-size:15px;margin:20px 0 8px">Riwayat order</h3>
@@ -745,9 +776,12 @@ function openOrder(no){ OPEN_NO=no;
     t.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); t.blur(); } });
     b.onclick=()=>{ h.value=parseDmy(t.value)||""; try{ h.showPicker(); }catch(_){ h.focus(); h.click(); } };
     h.addEventListener("change",e=>{ e.stopPropagation(); if(!h.value) return; t.value=dmy(fixYear(h.value)); t.dispatchEvent(new Event("change",{bubbles:true})); }); });
+  $("#dB").querySelectorAll('input[data-f="p"]').forEach(inp=>inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); inp.blur(); } }));
+  if(!F) initDrag(o,no);
   $("#chainOn").onchange=e=>{ CHAIN=e.target.checked; try{ localStorage.setItem("ct-chain",CHAIN?"1":"0"); }catch(_){} };
   $("#dB").querySelectorAll("tr[data-k]").forEach(tr=>tr.addEventListener("change",async e=>{ const f=e.target.dataset.f, k=+tr.dataset.k, it=o.items[k]; if(!f||e.target.type==="checkbox") return; let v=e.target.value; if(f==="h") v=v?+v:"";
     if(e.target.classList.contains("dt")){ const iso=parseDmy(v); if(iso===null){ toast("Format tanggal tidak dikenali. Ketik ddmmyy, contoh 300926"); e.target.value=dmy(f==="s"?it.s:targetOf(it)); return; } v=iso; e.target.value=dmy(iso); if(v===(f==="s"?it.s:targetOf(it))) return; }
+    if(f==="p"){ v=String(v).trim().replace(/\s+/g," "); const m=PICS().find(x=>x.toLowerCase()===v.toLowerCase()); if(m) v=m; e.target.value=v; if(v===(it.p||"")) return; }
     const fields={[f]:v}; if((f==="s"||f==="h")&&it.g) fields.g="";
     saveItem(it,fields,"");
     if(CHAIN&&(f==="s"||f==="h"||f==="g")){ const ch=chainFrom(o,k); if(ch.length){ saveItems(ch); toast(`Tgl submit ${ch.length} item berikutnya ikut disesuaikan`); } }
