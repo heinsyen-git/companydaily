@@ -591,6 +591,9 @@ function renderMine(){
 const OF={q:"",st:"aktif",pic:""};
 let CHAIN=true; try{ CHAIN=localStorage.getItem("ct-chain")!=="0"; }catch(e){}
 const realItems=o=>o.items.filter(i=>!i.j);
+/* urutan order: terbaru di atas (Tgl OK proses terbaru, lalu yang paling akhir ditambahkan) */
+function newestFirst(arr){ const pos=new Map(DB.orders.map((o,i)=>[o,i]));
+  return arr.slice().sort((a,b)=>{ const da=a.ok||"", db=b.ok||""; if(da!==db){ if(!da) return 1; if(!db) return -1; return db.localeCompare(da); } return (pos.get(b)??0)-(pos.get(a)??0); }); }
 const EXP=new Set(), HIST_ALL=new Set(); let FOCUS_ID=null, AUTO_EXP=false;
 const itemFilter=()=>OF.st==="menunggu"?(i=>/Menunggu/.test(i.st)):OF.st==="late"?(i=>isLate(i)):OF.st==="nopic"?(i=>!i.p&&!DONE(i.st)):(i=>!DONE(i.st));
 const filterLabel=()=>({menunggu:"menunggu persyaratan",late:"lewat target",nopic:"tanpa PIC"})[OF.st]||"berjalan";
@@ -615,7 +618,7 @@ function renderOrders(){
     if(OF.st==="menunggu") return its.some(i=>/Menunggu/.test(i.st));
     if(OF.st==="nopic") return its.some(i=>!i.p&&!DONE(i.st));
     return true; };
-  const list=DB.orders.filter(match);
+  const list=newestFirst(DB.orders.filter(match));
   if(AUTO_EXP){ AUTO_EXP=false; list.forEach(o=>EXP.add(o.no)); }
   $("#v-orders").innerHTML=`<div class="head"><div><h1>Order</h1><p>${DB.orders.length} order, ${allItems().length} item dokumen.</p></div>${isField()?"":'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="ordCollect">📊 Collect data report</button><button class="btn pri" id="newOrder">+ Buat order baru</button></div>'}</div>
   <div class="tools"><input class="in grow" id="oq" placeholder="Cari no. order, perusahaan, atau dokumen" value="${esc(OF.q)}">
@@ -647,7 +650,7 @@ function openNewOrder(){
   $("#nCancel").onclick=()=>$("#dlg").close();
   $("#nSave").onclick=async()=>{ const c=$("#nC").value.trim(), o=$("#nO").value.trim(); if(!c||!o){ toast("Isi nama perusahaan dan jenis order"); return; }
     const b=$("#nSave"); b.disabled=true; b.textContent="Menyimpan…";
-    try{ const r=await run("addOrder",{no:$("#nNo").value.trim(),c,o,ok:$("#nOk").value}); r.items=[]; DB.orders.unshift(r);
+    try{ const r=await run("addOrder",{no:$("#nNo").value.trim(),c,o,ok:$("#nOk").value}); r.items=[]; DB.orders.push(r);
       const lines=$("#nItems").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean); let after=null;
       for(const ln of lines){ const j=ln.startsWith("#"); const it=await run("addItem",r.no,{d:j?ln.replace(/^#+\s*/,"").toUpperCase():ln,j},null); r.items.push(it); }
       toast("Order dibuat"); OF.q=""; OF.st="aktif"; renderOrders(); openOrder(r.no);
@@ -752,7 +755,7 @@ function openOrder(no){
 /* ---------- collect data report: laporan detail seluruh order ---------- */
 function collectData(){
   const pics=PICS(), rows=[], orders=[];
-  DB.orders.forEach(o=>{ let head="";
+  newestFirst(DB.orders).forEach(o=>{ let head="";
     const its=[]; o.items.forEach(i=>{ if(i.j){ head=i.d; return; } its.push({...i,head,late:isLate(i),tgt:targetOf(i)}); });
     const n=its.length, d=its.filter(i=>DONE(i.st)).length, h=(DB.hist[o.no]||[]).slice().sort((a,b)=>(b.d+(b.t||"")).localeCompare(a.d+(a.t||"")))[0];
     const ord={o,its,n,d,prog:n?d/n:0,late:its.filter(i=>i.late).length,wait:its.filter(i=>/Menunggu/.test(i.st)).length,on:its.filter(i=>i.st==="On proses").length,hold:its.filter(i=>i.st==="Hold").length,
