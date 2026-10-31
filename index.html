@@ -504,7 +504,7 @@ function renderDash(){
     return `<div class="r"><div><b>${esc(p)}</b><small>${u.filter(x=>x.type==="Item").length} update item${u.some(x=>x.type==="Lainnya")?`, ${u.filter(x=>x.type==="Lainnya").length} aktivitas lain`:""}</small></div><div style="display:flex;gap:8px;align-items:center">${sent?`<span class="pill s-selesai">Terkirim ${esc(sent)}</span>`:u.length?'<span class="pill s-menunggu">Belum dikirim</span>':'<span class="pill s-belum">Belum ada laporan</span>'}${u.length?`<button class="btn sm" data-pic="${esc(p)}">Lihat</button>`:""}</div></div>`; }).join("");
   $("#v-dash").innerHTML=`
   <div class="head"><div><h1>Dashboard Company Team</h1><p>${fmtLong(TODAY)}. Data langsung dari Google Sheets.</p></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="btnRef">Muat ulang</button><button class="btn" id="btnCollect">📊 Collect data report</button><button class="btn pri" id="btnRep">Laporan ke Manager</button></div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="btnRef">Muat ulang</button><button class="btn" id="btnCollect">📊 Collect report</button><button class="btn pri" id="btnRep">Laporan ke Manager</button></div></div>
   <div class="kpis">
     <button class="kpi" data-go="aktif"><b>${S.orders}</b><span>order aktif</span></button>
     <button class="kpi" data-go="aktif"><b>${S.act.length}</b><span>item dokumen berjalan</span></button>
