@@ -173,9 +173,12 @@ body.is-dragging,body.is-dragging *{cursor:grabbing!important;user-select:none}
 @keyframes ldIn{from{opacity:0}to{opacity:1}}
 @media (prefers-color-scheme:dark){.ld-logo{background:#fff;border-radius:12px;padding:10px 14px}}
 @media (prefers-reduced-motion:reduce){.ld-logo,.ld-bar i{animation:none}}
-.t textarea.ket{resize:none;min-height:32px;line-height:1.35;overflow-y:auto;white-space:pre-wrap;font:inherit;font-size:13px}
+.t textarea.ket{resize:none;min-height:32px;line-height:1.4;overflow:hidden;white-space:pre-wrap;word-break:break-word;font:inherit;font-size:13px;display:block}
 .loghead{display:inline-flex;gap:6px;align-items:center}.loghead[aria-expanded="true"] .chev{transform:rotate(180deg)}.loghead .chev{transition:transform .2s}
 .ipfree{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:8px;font-size:13px}.ipfree label{display:flex;gap:5px;align-items:center}
+.dsave{align-self:center;font-size:12px;font-weight:700;color:var(--warn);background:var(--warn-soft);border-radius:99px;padding:5px 12px;white-space:nowrap;margin-left:auto;animation:rise .2s ease-out both}
+.dsave.ok{color:var(--ok);background:var(--ok-soft)}.dsave.err,.savechip.err{color:var(--bad);background:var(--bad-soft)}
+.dh .dsave+.x{margin-left:8px}
 [hidden]{display:none!important}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
 .top-in{max-width:1180px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -352,7 +355,7 @@ table.t{border-collapse:collapse;width:100%;font-size:13px;min-width:1180px}
   </section>
   <hr style="border:0;border-top:1px solid var(--line);margin:16px 0"><button class="btn" id="logout" style="color:var(--bad)">Keluar</button>
 </div></dialog>
-<dialog id="dlg"><div class="dh"><div><h3 id="dT"></h3><small id="dS"></small></div><button class="x" id="dX" aria-label="Tutup">×</button></div><div class="db" id="dB"></div><div class="insmenu" id="insMenu" hidden></div><div class="dprev" id="dPrev" hidden></div></dialog>
+<dialog id="dlg"><div class="dh"><div><h3 id="dT"></h3><small id="dS"></small></div><span class="dsave" id="dSave" hidden></span><button class="x" id="dX" aria-label="Tutup">×</button></div><div class="db" id="dB"></div><div class="insmenu" id="insMenu" hidden></div><div class="dprev" id="dPrev" hidden></div></dialog>
 <div class="idlebar" id="idleBar" hidden><span id="idleTxt"></span><button class="btn sm pri" id="idleStay">Tetap masuk</button></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -387,7 +390,7 @@ function parseDmy(v){ v=String(v||"").trim(); if(!v) return "";
 // tahun 2 digit di kalender bawaan (misalnya 0026) otomatis menjadi 2026
 document.addEventListener("change",e=>{ const t=e.target; if(t&&t.type==="date"&&/^00\d\d-/.test(t.value)) t.value=fixYear(t.value.replace(/^00/,"")); },true);
 const fmtLong=s=>new Date(s+"T00:00:00").toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
-let tT; const toast=m=>{const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(tT);tT=setTimeout(()=>t.classList.remove("on"),2800);};
+let tT; const toast=m=>{ if(/^Gagal/.test(m)) SAVE_ERR=true; const t=$("#toast"), host=document.querySelector("dialog[open]")||document.body; if(t.parentNode!==host) host.appendChild(t); t.textContent=m;t.classList.add("on");clearTimeout(tT);tT=setTimeout(()=>t.classList.remove("on"),2800);};
 let STATUS=["Belum proses","Menunggu persyaratan","On proses","Menunggu TTD klien","Hold","Selesai","Cancel"];
 const SCLS={"Belum proses":"s-belum","Menunggu persyaratan":"s-menunggu","On proses":"s-on","Menunggu TTD klien":"s-menunggu","Hold":"s-hold","Selesai":"s-selesai","Cancel":"s-cancel"};
 const pill=(s,late)=>`<span class="pill ${late?"s-late":SCLS[s]||"s-on"}">${esc(late?"Lewat target":s)}</span>`;
@@ -591,9 +594,12 @@ function copy(t){ const fb=()=>{ const a=document.createElement("textarea"); a.v
 /* ---------- update item ke server ---------- */
 /* simpan langsung tampil (optimistis): perubahan muncul seketika, dikirim ke server di latar belakang secara berurutan */
 const SQ=[]; let SQRUN=false;
-function saveState(){ const n=SQ.length+(SQRUN?1:0); document.body.classList.toggle("saving",n>0); const el=$("#saveChip"); if(!el) return;
-  if(n>0){ el.hidden=false; el.className="savechip"; el.textContent="Menyimpan "+n+" perubahan…"; }
-  else if(!el.hidden&&el.className==="savechip"){ el.className="savechip ok"; el.textContent="Tersimpan ✓"; clearTimeout(el._t); el._t=setTimeout(()=>{ el.hidden=true; },1600); } }
+let SAVE_ERR=false;
+function saveState(){ const n=SQ.length+(SQRUN?1:0); document.body.classList.toggle("saving",n>0);
+  [$("#saveChip"),$("#dSave")].forEach(el=>{ if(!el) return;
+    if(n>0){ el.hidden=false; el.className=el.id==="dSave"?"dsave":"savechip"; el.textContent="⏳ Menyimpan "+n+" perubahan…"; el._busy=true; }
+    else if(el._busy){ el._busy=false; el.className=(el.id==="dSave"?"dsave":"savechip")+(SAVE_ERR?" err":" ok"); el.textContent=SAVE_ERR?"⚠ Ada yang gagal disimpan":"✓ Tersimpan otomatis "+nowHM(); clearTimeout(el._t); el._t=setTimeout(()=>{ el.hidden=true; },SAVE_ERR?5000:3500); } });
+  if(n===0) SAVE_ERR=false; }
 function enqueue(job){ SQ.push(job); saveState(); pumpQ(); }
 async function pumpQ(){ if(SQRUN) return; SQRUN=true;
   while(SQ.length){ const job=SQ.shift(); saveState(); try{ await job(); }catch(e){} }
@@ -819,7 +825,9 @@ function openOrder(no){ OPEN_NO=no;
     h.addEventListener("change",e=>{ e.stopPropagation(); if(!h.value) return; t.value=dmyShow(fixYear(h.value)); t.dispatchEvent(new Event("change",{bubbles:true})); }); });
   $("#dB").querySelectorAll('input[data-f="p"]').forEach(inp=>inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); inp.blur(); } }));
   if(!F) initDrag(o,no);
-  $("#dB").querySelectorAll("textarea.ket").forEach(ta=>{ const fit=()=>{ ta.style.height="auto"; ta.style.height=Math.min(ta.scrollHeight+2,160)+"px"; }; fit(); ta.addEventListener("input",fit); });
+  const fitTa=ta=>{ ta.style.height="auto"; ta.style.height=(ta.scrollHeight+2)+"px"; };
+  $("#dB").querySelectorAll("textarea.ket").forEach(ta=>{ ta.addEventListener("input",()=>fitTa(ta)); ta.addEventListener("focus",()=>fitTa(ta)); });
+  requestAnimationFrame(()=>$("#dB").querySelectorAll("textarea.ket").forEach(fitTa));
   $("#chainOn").onchange=e=>{ CHAIN=e.target.checked; try{ localStorage.setItem("ct-chain",CHAIN?"1":"0"); }catch(_){} };
   $("#dB").querySelectorAll("tr[data-k]").forEach(tr=>tr.addEventListener("change",async e=>{ const f=e.target.dataset.f, k=+tr.dataset.k, it=o.items[k]; if(!f||e.target.type==="checkbox") return; let v=e.target.value; if(f==="h") v=v?+v:"";
     if(e.target.classList.contains("dt")){ const iso=parseDmy(v); if(iso===null){ toast("Format tanggal tidak dikenali. Ketik ddmmyy, contoh 300926"); e.target.value=dmyShow(f==="s"?it.s:targetOf(it)); return; } v=iso; e.target.value=dmyShow(iso); if(v===(f==="s"?it.s:targetOf(it))) return; }
