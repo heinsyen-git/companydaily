@@ -178,7 +178,9 @@ body.is-dragging,body.is-dragging *{cursor:grabbing!important;user-select:none}
 .ipfree{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:8px;font-size:13px}.ipfree label{display:flex;gap:5px;align-items:center}
 .dsave{align-self:center;font-size:12px;font-weight:700;color:var(--warn);background:var(--warn-soft);border-radius:99px;padding:5px 12px;white-space:nowrap;margin-left:auto;animation:rise .2s ease-out both}
 .dsave.ok{color:var(--ok);background:var(--ok-soft)}.dsave.err,.savechip.err{color:var(--bad);background:var(--bad-soft)}
-.dh .dsave+.x{margin-left:8px}
+.dh>div:first-child{flex:1;min-width:0}
+.dh .x{margin-left:auto;flex:none}
+.dh .dsave:not([hidden])+.x{margin-left:8px}
 .hdw{display:flex;align-items:center;gap:8px}.hd-date{display:flex;align-items:center;gap:6px;flex:none}.hd-date small{font-size:11px;font-weight:700;color:var(--pri);white-space:nowrap}.hd-date .dwrap{width:150px}
 .btn.pri-soft{color:var(--pri);border-color:var(--pri-soft);background:var(--pri-soft)}
 .o-main .lanjut{color:var(--pri)}
