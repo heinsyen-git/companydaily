@@ -201,6 +201,12 @@ body.is-dragging,body.is-dragging *{cursor:grabbing!important;user-select:none}
 .paybar>b{align-self:center;font-size:14px}.paybar .pb-title{letter-spacing:.04em;color:var(--pri)}.paybar .in.rp{text-align:right;min-width:150px}
 .pb-total{display:flex;flex-direction:column;gap:2px;margin-left:auto;text-align:right;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:6px 14px}.pb-total small{font-size:11px;font-weight:700;color:var(--muted)}.pb-total b{font-size:18px;color:var(--ok)}.paybar label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:var(--muted)}.paybar .in{min-width:140px;padding:7px 10px}
 .paybar .hint{align-self:center;color:var(--ok);font-weight:700}
+.pgtop{position:fixed;left:0;right:0;top:0;height:4px;z-index:90;background:rgba(127,140,160,.18);pointer-events:none}
+.pgtop i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--pri),#4C9BE8);transition:width .15s linear;border-radius:0 4px 4px 0}
+.pgtop.ok i{background:var(--ok)}.pgtop.err i{background:var(--bad)}
+.savechip,.dsave{position:relative;overflow:hidden}
+.savechip b,.dsave b{font-variant-numeric:tabular-nums}
+.cbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(0,0,0,.06)}.cbar i{display:block;height:100%;width:0;background:currentColor;transition:width .15s linear}
 [hidden]{display:none!important}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
 .top-in{max-width:1180px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -384,6 +390,7 @@ table.t{border-collapse:collapse;width:100%;font-size:13px;min-width:1180px}
 </div></dialog>
 <dialog id="dlg"><div class="dh"><div><h3 id="dT"></h3><small id="dS"></small></div><span class="dsave" id="dSave" hidden></span><button class="x" id="dX" aria-label="Tutup">×</button></div><div class="db" id="dB"></div><div class="insmenu" id="insMenu" hidden></div><div class="dprev" id="dPrev" hidden></div></dialog>
 <div class="idlebar" id="idleBar" hidden><span id="idleTxt"></span><button class="btn sm pri" id="idleStay">Tetap masuk</button></div>
+<div class="pgtop" id="pgTop" hidden><i></i></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- Link server disimpan terpisah di config.js, jadi file ini bisa diganti kapan saja tanpa mengedit link -->
@@ -417,7 +424,7 @@ function parseDmy(v){ v=String(v||"").trim(); if(!v) return "";
 // tahun 2 digit di kalender bawaan (misalnya 0026) otomatis menjadi 2026
 document.addEventListener("change",e=>{ const t=e.target; if(t&&t.type==="date"&&/^00\d\d-/.test(t.value)) t.value=fixYear(t.value.replace(/^00/,"")); },true);
 const fmtLong=s=>new Date(s+"T00:00:00").toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
-let tT; const toast=m=>{ if(/^Gagal/.test(m)) SAVE_ERR=true; const t=$("#toast"), host=document.querySelector("dialog[open]")||document.body; if(t.parentNode!==host) host.appendChild(t); t.textContent=m;t.classList.add("on");clearTimeout(tT);tT=setTimeout(()=>t.classList.remove("on"),2800);};
+let tT; const toast=m=>{ if(/^Gagal/.test(m)){ SAVE_ERR=true; PGERR=true; } const t=$("#toast"), host=document.querySelector("dialog[open]")||document.body; if(t.parentNode!==host) host.appendChild(t); t.textContent=m;t.classList.add("on");clearTimeout(tT);tT=setTimeout(()=>t.classList.remove("on"),2800);};
 let STATUS=["Belum proses","Menunggu persyaratan","On proses","Menunggu TTD klien","Hold","Selesai","Cancel"];
 const SCLS={"Belum proses":"s-belum","Menunggu persyaratan":"s-menunggu","On proses":"s-on","Menunggu TTD klien":"s-menunggu","Hold":"s-hold","Selesai":"s-selesai","Cancel":"s-cancel"};
 const pill=(s,late)=>`<span class="pill ${late?"s-late":SCLS[s]||"s-on"}">${esc(late?"Lewat target":s)}</span>`;
@@ -436,7 +443,18 @@ const call=(fn,a)=>IPP.then(()=>fetch(API_URL,{method:"POST",credentials:"omit",
   .then(r=>{ if(!r.ok) throw new Error("Server tidak merespons ("+r.status+")"); return r.json(); })
   .then(j=>{ if(j.error) throw new Error(j.error); return j.result; })
   .catch(e=>{ throw new Error(/Failed to fetch|NetworkError/.test(e.message)?"Tidak bisa terhubung ke server. Periksa internet atau pengaturan deployment.":e.message); });
-const run=(fn,...a)=>call(fn,a).catch(e=>{ if(/^LOGIN:/.test(e.message)) showLogin(e.message.replace(/^LOGIN:\s*/,"")); else if(/^IPBLOCK:/.test(e.message)){ try{ localStorage.removeItem("ct-cache"); }catch(_){} showLogin(e.message.replace(/^IPBLOCK:\s*/,"")); } throw e; });
+/* ---------- progres penyimpanan 0–100% (semua proses tulis ke Google Sheets) ---------- */
+let PGW=0, PGP=0, PGT=null, PGERR=false;
+const READ_FN=/^(getAll|listUsers|login|getView|listViewLinks|adminUnlock)$/;
+function pgBegin(){ if(PGW++===0){ PGP=2; PGERR=false; clearInterval(PGT); PGT=setInterval(()=>{ PGP=Math.min(92,PGP+Math.max(0.5,(92-PGP)*0.07)); pgPaint(); },120); pgPaint(); } }
+function pgEnd(ok){ if(ok===false) PGERR=true; if(PGW>0&&--PGW===0){ clearInterval(PGT); PGP=100; pgPaint(true); } }
+function pgPaint(done){
+  const top=document.getElementById("pgTop"); if(top){ top.hidden=false; top.className="pgtop"+(done?(PGERR?" err":" ok"):""); top.firstElementChild.style.width=PGP+"%"; clearTimeout(top._t); if(done) top._t=setTimeout(()=>{ top.hidden=true; },1400); }
+  [document.getElementById("saveChip"),document.getElementById("dSave")].forEach(el=>{ if(!el) return; const base=el.id==="dSave"?"dsave":"savechip";
+    if(PGW>0){ el.hidden=false; el.className=base+" busy"; el.innerHTML=`⏳ Menyimpan… <b>${Math.floor(PGP)}%</b><span class="cbar"><i style="width:${PGP}%"></i></span>`; el._busy=true; clearTimeout(el._t); }
+    else if(done&&el._busy){ el._busy=false; el.className=base+(PGERR?" err":" ok"); el.innerHTML=PGERR?"⚠ Gagal menyimpan":`✓ Tersimpan 100% · ${nowHM()}<span class="cbar"><i style="width:100%"></i></span>`; clearTimeout(el._t); el._t=setTimeout(()=>{ el.hidden=true; },PGERR?5000:3000); } }); }
+const run=(fn,...a)=>{ const w=!READ_FN.test(fn); if(w) pgBegin();
+  return call(fn,a).then(r=>{ if(w) pgEnd(true); return r; },e=>{ if(w) pgEnd(false); if(/^LOGIN:/.test(e.message)) showLogin(e.message.replace(/^LOGIN:\s*/,"")); else if(/^IPBLOCK:/.test(e.message)){ try{ localStorage.removeItem("ct-cache"); }catch(_){} showLogin(e.message.replace(/^IPBLOCK:\s*/,"")); } throw e; }); };
 function saveToken(t){ TOKEN=t||""; try{ t?localStorage.setItem("ct-token",t):localStorage.removeItem("ct-token"); }catch(e){} }
 
 const LOGO_SRC=(document.querySelector(".ck-logo")||{}).src||"";
@@ -634,14 +652,10 @@ function copy(t){ const fb=()=>{ const a=document.createElement("textarea"); a.v
 /* simpan langsung tampil (optimistis): perubahan muncul seketika, dikirim ke server di latar belakang secara berurutan */
 const SQ=[]; let SQRUN=false;
 let SAVE_ERR=false;
-function saveState(){ const n=SQ.length+(SQRUN?1:0); document.body.classList.toggle("saving",n>0);
-  [$("#saveChip"),$("#dSave")].forEach(el=>{ if(!el) return;
-    if(n>0){ el.hidden=false; el.className=el.id==="dSave"?"dsave":"savechip"; el.textContent="⏳ Menyimpan "+n+" perubahan…"; el._busy=true; }
-    else if(el._busy){ el._busy=false; el.className=(el.id==="dSave"?"dsave":"savechip")+(SAVE_ERR?" err":" ok"); el.textContent=SAVE_ERR?"⚠ Ada yang gagal disimpan":"✓ Tersimpan otomatis "+nowHM(); clearTimeout(el._t); el._t=setTimeout(()=>{ el.hidden=true; },SAVE_ERR?5000:3500); } });
-  if(n===0) SAVE_ERR=false; }
-function enqueue(job){ SQ.push(job); saveState(); pumpQ(); }
+function saveState(){ const n=SQ.length+(SQRUN?1:0); document.body.classList.toggle("saving",n>0); if(n===0) SAVE_ERR=false; }
+function enqueue(job){ SQ.push(job); pgBegin(); saveState(); pumpQ(); }
 async function pumpQ(){ if(SQRUN) return; SQRUN=true;
-  while(SQ.length){ const job=SQ.shift(); saveState(); try{ await job(); }catch(e){} }
+  while(SQ.length){ const job=SQ.shift(); saveState(); try{ await job(); }catch(e){ PGERR=true; } pgEnd(); }
   SQRUN=false; saveState(); }
 addEventListener("beforeunload",e=>{ if(SQ.length||SQRUN){ e.preventDefault(); e.returnValue=""; } });
 function saveItem(it,fields,note){
