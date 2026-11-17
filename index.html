@@ -184,6 +184,19 @@ body.is-dragging,body.is-dragging *{cursor:grabbing!important;user-select:none}
 .hdw{display:flex;align-items:center;gap:8px}.hd-date{display:flex;align-items:center;gap:6px;flex:none}.hd-date small{font-size:11px;font-weight:700;color:var(--pri);white-space:nowrap}.hd-date .dwrap{width:150px}
 .btn.pri-soft{color:var(--pri);border-color:var(--pri-soft);background:var(--pri-soft)}
 .o-main .lanjut{color:var(--pri)}
+.qst-pick{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.qst-pick .qsp{border:1.5px solid var(--line);background:var(--paper);border-radius:99px;padding:8px 16px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;color:var(--muted)}
+.qst-pick .qsp::before{content:"";width:9px;height:9px;border-radius:50%;background:currentColor;opacity:.85}
+.qst-pick .qsp.s-menunggu{color:var(--warn)}.qst-pick .qsp.s-selesai{color:var(--ok)}.qst-pick .qsp.s-cancel{color:var(--bad)}
+.qst-pick .qsp.on.s-menunggu{background:var(--warn-soft);border-color:var(--warn)}.qst-pick .qsp.on.s-selesai{background:var(--ok-soft);border-color:var(--ok)}.qst-pick .qsp.on.s-cancel{background:var(--bad-soft);border-color:var(--bad)}.qst-pick .qsp.on.s-belum{background:var(--soft);border-color:var(--muted)}
+.vview{min-height:100vh;background:var(--bg)}
+.vv-top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:12px 20px;padding-top:calc(12px + env(safe-area-inset-top,0px));background:var(--paper);border-bottom:1px solid var(--line)}
+.vv-logo{height:38px}.vv-t{display:flex;flex-direction:column;flex:1;min-width:200px}.vv-t b{font-size:16px}.vv-t small{color:var(--muted);font-size:12px}
+.vv-act{display:flex;gap:8px;flex-wrap:wrap}.vv-body{padding:16px 20px 40px;overflow-x:auto}
+.share{margin:0 0 14px;padding:14px 16px}.share h3{margin:0;font-size:15px}
+.sh-new{display:grid;grid-template-columns:1fr 170px auto;gap:8px;margin-bottom:12px}
+.sh-t td small{display:block;color:var(--muted);font-size:11px}.sh-t tr.off td{opacity:.6}.sh-t td.act{white-space:nowrap;text-align:right}
+@media(max-width:640px){.sh-new{grid-template-columns:1fr}}
 [hidden]{display:none!important}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
 .top-in{max-width:1180px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -324,6 +337,11 @@ table.t{border-collapse:collapse;width:100%;font-size:13px;min-width:1180px}
   </main>
 </div>
 
+<div class="vview" id="vView" hidden>
+  <header class="vv-top"><img class="vv-logo" data-logo alt="Woori Consulting"><div class="vv-t"><b>Laporan Order Company Team</b><small id="vvSub">Hanya untuk dilihat</small></div>
+    <div class="vv-act"><button class="btn sm" id="vvRef">↻ Muat ulang</button><button class="btn sm" id="vvPrint">🖨 Cetak / PDF</button><button class="btn sm pri" id="vvXlsx">⬇ Unduh Excel</button></div></header>
+  <div class="vv-body"><div class="rep-prev" id="vvBox"><p class="hint">Memuat laporan…</p></div></div>
+</div>
 <div class="loading" id="loading" hidden><div class="ld" aria-label="Memuat"><img class="ld-logo" alt="Woori Consulting" src="" data-logo><span class="ld-bar"><i></i></span></div></div>
 <dialog id="setDlg" class="setdlg"><div class="dh"><div><h3>Akun</h3><small id="setWho"></small></div><button class="x" id="setX" aria-label="Tutup">×</button></div><div class="db">
   <h3 style="font-size:15px;margin:0 0 8px">Ganti PIN saya</h3>
@@ -900,6 +918,7 @@ function collectData(){
 }
 const pct=v=>Math.round(v*100)+"%";
 /* format laporan mengikuti sheet PROCESS (file Daily Report Company Team) */
+const stBg=st=>/selesai/i.test(st)?"#C6EFCE":/on proses/i.test(st)?"#DDEBF7":/menunggu/i.test(st)?"#FFF2CC":/hold/i.test(st)?"#E7E6E6":/cancel/i.test(st)?"#F8CBAD":"#FFFFFF";
 const procDone=x=>x.n>0&&x.d===x.n;
 function reportHtml(R,forEmail){
   const bd="border:1px solid #000;padding:4px 6px;font:12px 'Malgun Gothic',Arial,sans-serif;vertical-align:middle";
@@ -913,7 +932,7 @@ function reportHtml(R,forEmail){
       let h=`<tr><td rowspan="${span}" style="${bd};text-align:center">${n}</td><td rowspan="${span}" style="${bd};text-align:center">${esc(x.o.no)}</td><td rowspan="${span}" style="${bd};text-align:center;font-weight:700">${esc(x.o.c)}</td>${fCell(0,x.o.ok?dmyFull(x.o.ok):"-")}<td colspan="8" style="${bd};background:#ED7D31;text-align:center;font-weight:700">${esc(x.o.o)}</td></tr>`;
       x.o.items.forEach((i,k)=>{ if(i.j){ h+=`<tr>${i.s?fCell(k+1,dmyFull(i.s)):""}<td colspan="8" style="${bd};background:#ED7D31;text-align:center;font-weight:700">${esc(i.d)}</td></tr>`; return; }
         const late=isLate(i), red=late?";color:#C00000;font-weight:700":"", tg=targetOf(i);
-        h+=`<tr><td style="${bd}">${esc(i.d)}</td><td style="${bd};text-align:center">${esc(i.p||"-")}</td><td style="${bd};text-align:center">${esc(i.t||"-")}</td><td style="${bd};text-align:center;white-space:nowrap">${i.h?i.h+" Hari Kerja":"-"}</td><td style="${bd};text-align:center;white-space:nowrap">${i.s?dmyFull(i.s):"-"}</td><td style="${bd};text-align:center;white-space:nowrap${red}">${tg?dmyFull(tg):"-"}</td><td style="${bd};text-align:center${red}">${esc(i.st)}${late?" (lewat target)":""}</td><td style="${bd};white-space:pre-line">${esc(i.k||"")}</td></tr>`; });
+        h+=`<tr><td style="${bd}">${esc(i.d)}</td><td style="${bd};text-align:center">${esc(i.p||"-")}</td><td style="${bd};text-align:center">${esc(i.t||"-")}</td><td style="${bd};text-align:center;white-space:nowrap">${i.h?i.h+" Hari Kerja":"-"}</td><td style="${bd};text-align:center;white-space:nowrap">${i.s?dmyFull(i.s):"-"}</td><td style="${bd};text-align:center;white-space:nowrap${red}">${tg?dmyFull(tg):"-"}</td><td style="${bd};text-align:center;background:${stBg(i.st)}${red}">${esc(i.st)}${late?" (lewat target)":""}</td><td style="${bd};white-space:pre-line">${esc(i.k||"")}</td></tr>`; });
       return h; }).join("");
     return `<div style="font:700 15px 'Malgun Gothic',Arial;text-align:center;margin:14px 0 2px">${title}</div><div style="font:700 12px 'Malgun Gothic',Arial;text-align:right;margin-bottom:4px">${fmtLong(R.date)}</div>
       <table style="border-collapse:collapse;width:100%">${head}${body||`<tr><td colspan="12" style="${bd};text-align:center">Tidak ada data</td></tr>`}</table>`; };
@@ -948,7 +967,7 @@ async function buildXlsx(R){
         if(i.j){ if(i.s){ fStarts.push(r); put(5,dmyFull(i.s),st({font:{name:FN,sz:12,bold:true}})); } put(6,i.d,st(ORG)); for(let c=7;c<=13;c++) put(c,"",st(ORG)); merges.push({s:{r,c:6},e:{r,c:13}}); rows[r]={hpt:26}; r++; return; }
         const late=isLate(i), tg=targetOf(i), red=late?{font:{name:FN,sz:12,bold:true,color:{rgb:"C00000"}}}:{};
         put(6,i.d,st({alignment:{horizontal:"left",vertical:"center",wrapText:true}})); put(7,i.p||"-",st()); put(8,i.t||"-",st()); put(9,i.h?i.h+" Hari Kerja":"-",st());
-        put(10,i.s?dmyFull(i.s):"-",st()); put(11,tg?dmyFull(tg):"-",st(red)); put(12,i.st+(late?" (lewat target)":""),st(red));
+        put(10,i.s?dmyFull(i.s):"-",st()); put(11,tg?dmyFull(tg):"-",st(red)); put(12,i.st+(late?" (lewat target)":""),st(Object.assign({fill:{fgColor:{rgb:stBg(i.st).slice(1)}}},red)));
         put(13,i.k||"",st({alignment:{horizontal:"left",vertical:"center",wrapText:true}})); rows[r]={hpt:Math.max(24,Math.min(90,15*(1+Math.floor(String(i.k||"").length/70))))}; r++; });
       const end=r-1; if(end>start) for(let c=2;c<=4;c++) merges.push({s:{r:start,c},e:{r:end,c}});
       fStarts.forEach((a,ix)=>{ const b=(ix+1<fStarts.length?fStarts[ix+1]:end+1)-1; if(b>a) merges.push({s:{r:a,c:5},e:{r:b,c:5}}); }); });
@@ -962,12 +981,13 @@ async function buildXlsx(R){
 function openCollect(){
   const R=collectData(), fname="DAILY REPORT COMPANY TEAM "+R.date+".xlsx";
   $("#dT").textContent="Collect data report"; $("#dS").textContent=`Laporan detail ${R.S.total} order dan ${R.S.items} item, per ${fmtLong(R.date)}. Data diambil dari Google Sheets saat ini.`;
-  $("#dB").innerHTML=`<div class="rep-actions"><button class="btn pri" id="rpXlsx">⬇ Unduh Excel</button><button class="btn" id="rpPrint">🖨 Cetak / simpan PDF</button>${isField()?"":'<button class="btn" id="rpMail">✉ Kirim ke Manager</button>'}<button class="btn" id="rpRef">↻ Ambil data terbaru</button></div><div class="rep-prev">${reportHtml(R)}</div>`;
+  $("#dB").innerHTML=`<div class="rep-actions"><button class="btn pri" id="rpXlsx">⬇ Unduh Excel</button><button class="btn" id="rpPrint">🖨 Cetak / simpan PDF</button>${isField()?"":'<button class="btn" id="rpMail">✉ Kirim ke Manager</button>'}<button class="btn" id="rpRef">↻ Ambil data terbaru</button>${isField()?"":'<button class="btn" id="rpShare">🔗 Link view</button>'}</div><div id="shareBox" hidden></div><div class="rep-prev">${reportHtml(R)}</div>`;
   $("#dlg").classList.add("wide"); if(!$("#dlg").open) $("#dlg").showModal();
   const busyBtn=async(b,label,fn)=>{ const t=b.textContent; b.disabled=true; b.textContent=label; try{ await fn(); }catch(e){ toast(e.message); } b.disabled=false; b.textContent=t; };
   $("#rpXlsx").onclick=e=>busyBtn(e.target,"Menyiapkan…",async()=>{ const b64=await buildXlsx(R); const a=document.createElement("a"); a.href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,"+b64; a.download=fname; document.body.appendChild(a); a.click(); a.remove(); toast("File Excel diunduh"); });
-  $("#rpPrint").onclick=()=>{ const w=window.open("","_blank"); if(!w){ toast("Izinkan pop-up untuk mencetak"); return; } w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Laporan Order Company Team ${R.date}</title><style>@page{size:A3 landscape;margin:10mm}body{margin:0}table{page-break-inside:auto}tr{page-break-inside:avoid}</style></head><body>${reportHtml(R)}</body></html>`); w.document.close(); setTimeout(()=>{ w.focus(); w.print(); },400); };
+  $("#rpPrint").onclick=()=>{ const w=window.open("","_blank"); if(!w){ toast("Izinkan pop-up untuk mencetak"); return; } w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Laporan Order Company Team ${R.date}</title><style>@page{size:A3 landscape;margin:10mm}html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0}table{page-break-inside:auto}tr{page-break-inside:avoid}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}</style></head><body>${reportHtml(R)}</body></html>`); w.document.close(); setTimeout(()=>{ w.focus(); w.print(); },400); };
   if($("#rpMail")) $("#rpMail").onclick=e=>busyBtn(e.target,"Mengirim…",async()=>{ const b64=await buildXlsx(R); const r=await run("emailOrderReport",reportHtml(R,true),b64,fname); toast("Terkirim ke "+r.to.join(", ")); });
+  if($("#rpShare")) $("#rpShare").onclick=()=>{ const b=$("#shareBox"); b.hidden=!b.hidden; if(!b.hidden) renderShare(); };
   $("#rpRef").onclick=e=>busyBtn(e.target,"Memuat…",async()=>{ await reload(true); openCollect(); toast("Laporan diperbarui dengan data terbaru"); });
 }
 
@@ -975,6 +995,7 @@ function openCollect(){
 const QF={q:"",st:""};
 const rupiah=v=>{ const n=String(v||"").replace(/[^\d]/g,""); return n?"Rp "+(+n).toLocaleString("id-ID"):"–"; };
 const qCls=s=>/cancel|batal/i.test(s)?"s-cancel":/ok|deal|proses|setuju/i.test(s)?"s-selesai":/quot/i.test(s)?"s-menunggu":"s-belum";
+const qBg={"s-cancel":"var(--bad)","s-selesai":"var(--ok)","s-menunggu":"var(--warn)","s-belum":"var(--muted)"};
 function renderQuot(){
   const Q=(DB.quot||[]), sts=[...new Set(Q.map(q=>q.st).filter(Boolean))];
   const list=Q.filter(q=>(!QF.st||q.st===QF.st)&&(!QF.q||[q.kat,q.c,q.o,q.note,q.st].join(" ").toLowerCase().includes(QF.q.toLowerCase())));
@@ -995,7 +1016,8 @@ function renderQuot(){
     try{ await run("deleteQuot",b.dataset.qd); DB.quot=DB.quot.filter(q=>q.id!==b.dataset.qd); toast("Quotation dihapus"); renderQuot(); }catch(e){ toast(e.message); } });
 }
 function openQuot(q){
-  const kats=[...new Set((DB.quot||[]).map(x=>x.kat).filter(Boolean))], sts=[...new Set(["Quotation","Ok proses","Cancel",...(DB.quot||[]).map(x=>x.st).filter(Boolean)])];
+  const kats=[...new Set((DB.quot||[]).map(x=>x.kat).filter(Boolean))], base=["Quotation","OK Proses","Cancel"], cur=q&&q.st?q.st:"Quotation";
+  const sts=[...new Set([...base,...(DB.quot||[]).map(x=>x.st).filter(Boolean).filter(x=>!base.some(b=>b.toLowerCase()===x.toLowerCase()))])];
   $("#dT").textContent=q?"Ubah quotation":"Tambah quotation"; $("#dS").textContent="Diisi manual. Tersimpan langsung ke Google Sheets (sheet Daftar Quotation).";
   $("#dB").innerHTML=`<div class="nform">
     <label class="f">Kategori<input class="in" id="qKat" list="qKats" value="${esc(q?q.kat:"")}" placeholder="Misalnya Perizinan, Akun, Legal"><datalist id="qKats">${kats.map(k=>`<option value="${esc(k)}">`).join("")}</datalist></label>
@@ -1003,9 +1025,10 @@ function openQuot(q){
     <label class="f full">Perusahaan<input class="in" id="qC" value="${esc(q?q.c:"")}" placeholder="PT ..."></label>
     <label class="f full">Order<input class="in" id="qO" value="${esc(q?q.o:"")}" placeholder="Misalnya Pengalihan akun WLK, order 23.10.26"></label>
     <label class="f">Jumlah (Rp)<input class="in" id="qRp" inputmode="numeric" value="${esc(q&&q.rp?(+q.rp).toLocaleString("id-ID"):"")}" placeholder="1.000.000"></label>
-    <label class="f">Status order<input class="in" id="qSt" list="qSts" value="${esc(q?q.st:"Quotation")}"><datalist id="qSts">${sts.map(k=>`<option value="${esc(k)}">`).join("")}</datalist></label>
+    <div class="f">Status order<div class="qst-pick" id="qStPick">${sts.map(k=>`<button type="button" class="qsp ${qCls(k)}${k.toLowerCase()===cur.toLowerCase()?" on":""}" data-qs="${esc(k)}">${esc(k)}</button>`).join("")}</div><input type="hidden" id="qSt" value="${esc(sts.find(k=>k.toLowerCase()===cur.toLowerCase())||cur)}"></div>
     <label class="f full">Hal yang dibahas dengan klien<textarea class="in" id="qNote" placeholder="Misalnya: menunggu approval quotation dari atasan, sudah follow up via WA">${esc(q?q.note:"")}</textarea></label>
   </div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn pri" id="qSave">Simpan</button><button class="btn" id="qCancel">Batal</button></div>`;
+  $("#qStPick").onclick=e=>{ const b=e.target.closest("[data-qs]"); if(!b) return; $("#qSt").value=b.dataset.qs; $("#qStPick").querySelectorAll(".qsp").forEach(x=>x.classList.toggle("on",x===b)); };
   $("#qRp").oninput=e=>{ const n=e.target.value.replace(/[^\d]/g,""); e.target.value=n?(+n).toLocaleString("id-ID"):""; };
   $("#qCancel").onclick=()=>$("#dlg").close();
   $("#qSave").onclick=async()=>{ const b=$("#qSave"); b.disabled=true; b.textContent="Menyimpan…";
@@ -1052,6 +1075,42 @@ function tick(){
 tick();
 $("#idleStay").onclick=()=>markActive();
 try{ const m=sessionStorage.getItem("ct-msg"); if(m){ sessionStorage.removeItem("ct-msg"); setTimeout(()=>{ $("#lgErr").textContent=m; },400); } }catch(e){}
+
+/* ---------- LINK VIEW: laporan bisa dilihat tanpa login (hanya baca) ---------- */
+const viewUrl=t=>location.origin+location.pathname.replace(/index\.html$/,"")+"?view="+t;
+async function renderShare(){ const box=$("#shareBox");
+  box.innerHTML=`<div class="share card"><h3>🔗 Link view laporan</h3><p class="hint" style="margin:2px 0 10px">Penerima bisa melihat laporan terbaru (format ini) tanpa login dan tanpa bisa mengubah data. Link bisa dinonaktifkan kapan saja.</p>
+    <div class="sh-new"><input class="in" id="shName" placeholder="Nama penerima, misalnya Pak Direktur / Klien PT ABC"><select class="in" id="shDays"><option value="7">Berlaku 7 hari</option><option value="30" selected>Berlaku 30 hari</option><option value="90">Berlaku 90 hari</option><option value="0">Tanpa batas</option></select><button class="btn pri" id="shMake">Buat link</button></div>
+    <div id="shList"><p class="hint">Memuat daftar link…</p></div></div>`;
+  $("#shMake").onclick=async()=>{ const n=$("#shName").value.trim(); if(!n){ toast("Isi nama penerima"); return; } const b=$("#shMake"); b.disabled=true;
+    try{ const r=await run("createViewLink",n,$("#shDays").value); $("#shName").value=""; await copyLink(r.token); loadShareList(); }catch(e){ toast(e.message); } b.disabled=false; };
+  loadShareList(); }
+async function copyLink(t){ const u=viewUrl(t); try{ await navigator.clipboard.writeText(u); toast("Link disalin. Tempel di WhatsApp atau email penerima."); }catch(e){ prompt("Salin link ini:",u); } }
+async function loadShareList(){ try{ const L=await run("listViewLinks"); const now=TODAY;
+    $("#shList").innerHTML=L.length?`<table class="t sh-t"><tr><th>Penerima</th><th>Berlaku sampai</th><th>Dilihat</th><th>Status</th><th></th></tr>${L.map(x=>{ const exp=x.exp&&now>x.exp, on=x.aktif&&!exp;
+      return `<tr class="${on?"":"off"}"><td><b>${esc(x.nama)}</b><small>dibuat ${esc(String(x.dibuat).slice(0,10))} oleh ${esc(x.by||"-")}</small></td><td>${x.exp?fmt(x.exp):"Tanpa batas"}</td><td>${x.n}×${x.last?`<small>terakhir ${esc(String(x.last).slice(0,16))}</small>`:""}</td><td><span class="pill ${on?"s-selesai":"s-cancel"}">${on?"Aktif":exp?"Kedaluwarsa":"Nonaktif"}</span></td>
+        <td class="act">${on?`<button class="btn sm" data-shc="${esc(x.token)}">Salin link</button><button class="btn sm" data-shr="${esc(x.token)}" style="color:var(--bad)">Nonaktifkan</button>`:""}</td></tr>`; }).join("")}</table>`:'<p class="hint">Belum ada link.</p>';
+    $("#shList").onclick=async e=>{ const c=e.target.closest("[data-shc]"), r=e.target.closest("[data-shr]");
+      if(c) copyLink(c.dataset.shc);
+      if(r&&confirm("Nonaktifkan link ini? Penerima tidak bisa membuka laporan lagi.")){ try{ await run("revokeViewLink",r.dataset.shr); toast("Link dinonaktifkan"); loadShareList(); }catch(err){ toast(err.message); } } };
+  }catch(e){ $("#shList").innerHTML=`<p class="hint" style="color:var(--bad)">${esc(e.message)}</p>`; } }
+/* mode view (dibuka dari link) */
+const VIEW_TOKEN=new URLSearchParams(location.search).get("view");
+async function startView(){
+  $("#vLogin").hidden=true; $("#vApp").hidden=true; $("#vView").hidden=false; document.title="Laporan Order Company Team";
+  document.querySelectorAll("#vView img[data-logo]").forEach(i=>i.src=LOGO_SRC);
+  let R=null;
+  const load=async()=>{ $("#vvSub").textContent="Memuat data terbaru…";
+    try{ const d=await call("getView",[VIEW_TOKEN]); d.users=[]; d.updates=[]; d.quot=[]; build(d); ME={nama:d.viewer,role:"Viewer"};
+      R=collectData(); R.by="Company Team"; $("#vvBox").innerHTML=reportHtml(R);
+      $("#vvSub").textContent=`Untuk ${d.viewer} · hanya untuk dilihat · data per ${new Date().toLocaleString("id-ID",{dateStyle:"medium",timeStyle:"short"})}${d.exp?` · link berlaku s/d ${fmt(d.exp)}`:""}`; ME=null; }
+    catch(e){ $("#vvBox").innerHTML=`<div style="padding:30px;text-align:center"><b>Laporan tidak dapat dibuka.</b><p class="hint">${esc(e.message.replace(/^VIEW:\s*/,""))}</p></div>`; $("#vvSub").textContent=""; } };
+  $("#vvRef").onclick=load;
+  $("#vvPrint").onclick=()=>{ if(!R) return; const w=window.open("","_blank"); if(!w){ toast("Izinkan pop-up untuk mencetak"); return; } w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Laporan Order Company Team</title><style>@page{size:A3 landscape;margin:10mm}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0}tr{page-break-inside:avoid}</style></head><body>${reportHtml(R)}</body></html>`); w.document.close(); setTimeout(()=>{ w.focus(); w.print(); },400); };
+  $("#vvXlsx").onclick=async e=>{ if(!R) return; const b=e.target; b.disabled=true; try{ const b64=await buildXlsx(R); const a=document.createElement("a"); a.href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,"+b64; a.download="DAILY REPORT COMPANY TEAM "+R.date+".xlsx"; document.body.appendChild(a); a.click(); a.remove(); }catch(err){ toast(err.message); } b.disabled=false; };
+  await load();
+}
+
 const CFG_ERR=typeof window.CT_API_URL==="undefined"
   ? "File <b>config.js</b> tidak ditemukan. Pastikan namanya persis <b>config.js</b> (huruf kecil semua) dan berada di folder yang sama dengan index.html, bukan di dalam folder lain."
   : /TEMPEL/i.test(API_URL)||!API_URL ? "File <b>config.js</b> sudah ada, tetapi link /exec belum diisi."
@@ -1060,7 +1119,7 @@ const CFG_ERR=typeof window.CT_API_URL==="undefined"
 if(CFG_ERR){
   $("#vLogin").hidden=true; $("#loading").hidden=false;
   $("#loading").innerHTML='<div style="max-width:480px;text-align:center;padding:20px;line-height:1.6"><b style="color:var(--ink)">Link server belum diatur.</b><br>'+CFG_ERR+'</div>';
-} else if(TOKEN) enter(); else startLogin();
+} else if(VIEW_TOKEN) startView(); else if(TOKEN) enter(); else startLogin();
 })();
 
 </script>
