@@ -198,7 +198,8 @@ body.is-dragging,body.is-dragging *{cursor:grabbing!important;user-select:none}
 .sh-t td small{display:block;color:var(--muted);font-size:11px}.sh-t tr.off td{opacity:.6}.sh-t td.act{white-space:nowrap;text-align:right}
 @media(max-width:640px){.sh-new{grid-template-columns:1fr}}
 .paybar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 14px;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:0 0 14px}
-.paybar>b{align-self:center;font-size:14px}.paybar label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:var(--muted)}.paybar .in{min-width:140px;padding:7px 10px}
+.paybar>b{align-self:center;font-size:14px}.paybar .pb-title{letter-spacing:.04em;color:var(--pri)}.paybar .in.rp{text-align:right;min-width:150px}
+.pb-total{display:flex;flex-direction:column;gap:2px;margin-left:auto;text-align:right;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:6px 14px}.pb-total small{font-size:11px;font-weight:700;color:var(--muted)}.pb-total b{font-size:18px;color:var(--ok)}.paybar label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:var(--muted)}.paybar .in{min-width:140px;padding:7px 10px}
 .paybar .hint{align-self:center;color:var(--ok);font-weight:700}
 [hidden]{display:none!important}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
@@ -466,8 +467,10 @@ const PICS=()=>DB.users.filter(u=>u.role!=="Manager").map(u=>u.nama);
 const PIC_OPTS=()=>[...new Set([...(DB.users||[]).map(u=>u.nama),...(DB.staff||[])].filter(Boolean))].sort((a,b)=>a.localeCompare(b));
 const picSelect=(cur,dis)=>{ const L=PIC_OPTS(); if(cur&&!L.includes(cur)) L.push(cur); return `<select class="in" data-f="p"${dis}><option value="">– Pilih PIC –</option>${L.map(n=>`<option${n===cur?" selected":""}>${esc(n)}</option>`).join("")}</select>`; };
 /* pembayaran order */
-const payBadge=o=>`${/^sudah/i.test(o.dp||"")?`<span class="pill s-selesai" title="DP ${o.dpd?fmt(o.dpd):""}">DP ✓</span>`:o.dp?`<span class="pill s-belum">Belum DP</span>`:""}${/^lunas/i.test(o.ls||"")?`<span class="pill s-selesai" title="Lunas ${o.lsd?fmt(o.lsd):""}">Lunas ✓</span>`:o.ls?`<span class="pill s-menunggu">Belum lunas</span>`:""}`;
-const payText=o=>[o.dp?`DP: ${o.dp}${o.dpd?" ("+dmyFull(o.dpd)+")":""}`:"",o.ls?`Pelunasan: ${o.ls}${o.lsd?" ("+dmyFull(o.lsd)+")":""}`:""].filter(Boolean).join("\n");
+const payBadge=o=>`${paidOf(o)?`<span class="pill s-on" title="Total dibayar">${rpS(paidOf(o))}</span>`:""}${/^sudah/i.test(o.dp||"")?`<span class="pill s-selesai" title="DP ${o.dpd?fmt(o.dpd):""}">DP ✓</span>`:o.dp?`<span class="pill s-belum">Belum DP</span>`:""}${/^lunas/i.test(o.ls||"")?`<span class="pill s-selesai" title="Lunas ${o.lsd?fmt(o.lsd):""}">Lunas ✓</span>`:o.ls?`<span class="pill s-menunggu">Belum lunas</span>`:""}`;
+const paidOf=o=>(/^sudah/i.test(o.dp||"")?(+o.dpn||0):0)+(/^lunas/i.test(o.ls||"")?(+o.lsn||0):0);
+const rpS=n=>"Rp "+(+n||0).toLocaleString("id-ID");
+const payText=o=>[o.dp?`DP: ${o.dp}${o.dpd?" ("+dmyFull(o.dpd)+")":""}${/^sudah/i.test(o.dp)&&o.dpn?" "+rpS(o.dpn):""}`:"",o.ls?`Pelunasan: ${o.ls}${o.lsd?" ("+dmyFull(o.lsd)+")":""}${/^lunas/i.test(o.ls)&&o.lsn?" "+rpS(o.lsn):""}`:"",paidOf(o)?`Total dibayar: ${rpS(paidOf(o))}`:""].filter(Boolean).join("\n");
 const today=()=>DB.updates.filter(u=>u.date===TODAY);
 
 /* ---------- login ---------- */
@@ -785,15 +788,18 @@ function openNewOrder(){
     <label class="f full">Jenis order<input class="in" id="nO" placeholder="Misalnya Pendirian PMA, Perubahan direksi"></label>
     <label class="f">Status DP<select class="in" id="nDp"><option value="">–</option><option>Belum DP</option><option>Sudah DP</option></select></label>
     <label class="f">Tgl bayar DP<input class="in" id="nDpd" type="date"></label>
+    <label class="f">Nominal DP (Rp)<input class="in" id="nDpn" inputmode="numeric" placeholder="0"></label><span></span>
     <label class="f">Status pelunasan<select class="in" id="nLs"><option value="">–</option><option>Belum lunas</option><option>Lunas</option></select></label>
     <label class="f">Tgl pelunasan<input class="in" id="nLsd" type="date"></label>
+    <label class="f">Nominal pelunasan (Rp)<input class="in" id="nLsn" inputmode="numeric" placeholder="0"></label>
     <label class="f full">Sub-proses / item awal (opsional, satu per baris)<textarea class="in" id="nItems" placeholder="Awali dengan # untuk judul sub-proses, contoh:&#10;#PENINGKATAN MODAL DASAR&#10;RUPS&#10;Akta Perubahan&#10;#UPDATE OSS&#10;Update OSS - Perubahan Saham"></textarea></label>
   </div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn pri" id="nSave">Buat order</button><button class="btn" id="nCancel">Batal</button></div>`;
   $("#nCancel").onclick=()=>$("#dlg").close();
+  ["#nDpn","#nLsn"].forEach(id=>$(id).oninput=e=>{ const n=+e.target.value.replace(/[^\d]/g,"")||0; e.target.value=n?n.toLocaleString("id-ID"):""; });
   $("#nSave").onclick=async()=>{ const c=$("#nC").value.trim(), o=$("#nO").value.trim(); if(!c||!o){ toast("Isi nama perusahaan dan jenis order"); return; }
     const b=$("#nSave"); b.disabled=true; b.textContent="Menyimpan…";
     try{ const dp=$("#nDp").value, ls=$("#nLs").value; if(/^sudah/i.test(dp)&&!$("#nDpd").value) $("#nDpd").value=TODAY; if(/^lunas/i.test(ls)&&!$("#nLsd").value) $("#nLsd").value=TODAY;
-      const r=await run("addOrder",{no:$("#nNo").value.trim(),c,o,ok:$("#nOk").value,dp,dpd:/^sudah/i.test(dp)?$("#nDpd").value:"",ls,lsd:/^lunas/i.test(ls)?$("#nLsd").value:""}); r.items=[]; DB.orders.push(r);
+      const r=await run("addOrder",{no:$("#nNo").value.trim(),c,o,ok:$("#nOk").value,dp,dpd:/^sudah/i.test(dp)?$("#nDpd").value:"",ls,lsd:/^lunas/i.test(ls)?$("#nLsd").value:"",dpn:$("#nDpn").value,lsn:$("#nLsn").value}); r.items=[]; DB.orders.push(r);
       const lines=$("#nItems").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean); let after=null;
       for(const ln of lines){ const j=ln.startsWith("#"); const it=await run("addItem",r.no,{d:j?ln.replace(/^#+\s*/,"").toUpperCase():ln,j},null); r.items.push(it); }
       toast("Order dibuat"); OF.q=""; OF.st="aktif"; renderOrders(); openOrder(r.no);
@@ -832,11 +838,14 @@ function openOrder(no){ OPEN_NO=no;
     <label class="f full">Nama perusahaan<input class="in" id="oeC" value="${esc(o.c)}"></label>
     <label class="f full">Jenis order<input class="in" id="oeO" value="${esc(o.o)}"></label></div>
     <div style="display:flex;gap:8px;margin-top:10px"><button class="btn pri" id="oeSave">Simpan</button><button class="btn" id="oeCancel">Batal</button></div></div>
-  <div class="paybar"><b>💰 Pembayaran</b>
+  <div class="paybar"><b class="pb-title">STATUS BAYAR</b>
     <label>DP<select class="in" id="pyDp"><option value="">–</option><option${o.dp==="Belum DP"?" selected":""}>Belum DP</option><option${/^sudah/i.test(o.dp||"")?" selected":""}>Sudah DP</option></select></label>
     <label class="pyd" ${/^sudah/i.test(o.dp||"")?"":"hidden"}>Tgl bayar DP<input class="in" type="date" id="pyDpd" value="${esc(o.dpd||"")}"></label>
+    <label class="pyd" ${/^sudah/i.test(o.dp||"")?"":"hidden"}>Nominal DP (Rp)<input class="in rp" id="pyDpn" inputmode="numeric" placeholder="0" value="${o.dpn?(+o.dpn).toLocaleString("id-ID"):""}"></label>
     <label>Pelunasan<select class="in" id="pyLs"><option value="">–</option><option${o.ls==="Belum lunas"?" selected":""}>Belum lunas</option><option${/^lunas/i.test(o.ls||"")?" selected":""}>Lunas</option></select></label>
     <label class="pyl" ${/^lunas/i.test(o.ls||"")?"":"hidden"}>Tgl pelunasan<input class="in" type="date" id="pyLsd" value="${esc(o.lsd||"")}"></label>
+    <label class="pyl" ${/^lunas/i.test(o.ls||"")?"":"hidden"}>Nominal pelunasan (Rp)<input class="in rp" id="pyLsn" inputmode="numeric" placeholder="0" value="${o.lsn?(+o.lsn).toLocaleString("id-ID"):""}"></label>
+    <div class="pb-total"><small>Total dibayar</small><b id="pyTot">${rpS(paidOf(o))}</b></div>
     <span class="hint" id="pySt"></span></div>`}
   <div class="ohead"><h3 style="font-size:15px;margin:0">Item dokumen</h3>
     <label class="chain"><input type="checkbox" id="chainOn"${CHAIN?" checked":""}> Tgl submit berikutnya otomatis lanjut dari target item sebelumnya</label></div>
@@ -857,13 +866,16 @@ function openOrder(no){ OPEN_NO=no;
     b.disabled=true; b.textContent="Menghapus…";
     try{ await run("deleteOrder",no); DB.orders=DB.orders.filter(x=>x.no!==no); delete DB.hist[no]; EXP.delete(no); $("#dlg").close(); toast("Order "+no+" dihapus"); renderOrders(); }
     catch(e){ toast(e.message); b.disabled=false; b.textContent="🗑 Hapus order"; } };
-  if($("#pyDp")){ const savePay=async()=>{ const dp=$("#pyDp").value, ls=$("#pyLs").value;
-      $(".paybar .pyd").hidden=!/^sudah/i.test(dp); $(".paybar .pyl").hidden=!/^lunas/i.test(ls);
+  if($("#pyDp")){ const num=v=>+String(v||"").replace(/[^\d]/g,"")||0;
+    ["#pyDpn","#pyLsn"].forEach(id=>$(id).oninput=e=>{ const n=num(e.target.value); e.target.value=n?n.toLocaleString("id-ID"):""; $("#pyTot").textContent=rpS((/^sudah/i.test($("#pyDp").value)?num($("#pyDpn").value):0)+(/^lunas/i.test($("#pyLs").value)?num($("#pyLsn").value):0)); });
+    const savePay=async()=>{ const dp=$("#pyDp").value, ls=$("#pyLs").value;
+      document.querySelectorAll(".paybar .pyd").forEach(x=>x.hidden=!/^sudah/i.test(dp)); document.querySelectorAll(".paybar .pyl").forEach(x=>x.hidden=!/^lunas/i.test(ls));
       if(/^sudah/i.test(dp)&&!$("#pyDpd").value) $("#pyDpd").value=TODAY; if(/^lunas/i.test(ls)&&!$("#pyLsd").value) $("#pyLsd").value=TODAY;
-      const f={dp,dpd:/^sudah/i.test(dp)?$("#pyDpd").value:"",ls,lsd:/^lunas/i.test(ls)?$("#pyLsd").value:""}; $("#pySt").textContent="Menyimpan…";
-      try{ const r=await run("updateOrder",no,f); Object.assign(o,{dp:r.dp,dpd:r.dpd,ls:r.ls,lsd:r.lsd}); if(r.note) (DB.hist[no]=DB.hist[no]||[]).push({d:TODAY,t:nowHM(),no,x:r.note,by:ME.nama}); $("#pySt").textContent="✓ Tersimpan"; setTimeout(()=>{ const e=$("#pySt"); if(e) e.textContent=""; },2500); }
+      const f={dp,dpd:/^sudah/i.test(dp)?$("#pyDpd").value:"",ls,lsd:/^lunas/i.test(ls)?$("#pyLsd").value:"",dpn:num($("#pyDpn").value),lsn:num($("#pyLsn").value)}; $("#pySt").textContent="Menyimpan…";
+      try{ const r=await run("updateOrder",no,f); Object.assign(o,{dp:r.dp,dpd:r.dpd,ls:r.ls,lsd:r.lsd,dpn:r.dpn,lsn:r.lsn}); $("#pyTot").textContent=rpS(paidOf(o)); if(r.note) (DB.hist[no]=DB.hist[no]||[]).push({d:TODAY,t:nowHM(),no,x:r.note,by:ME.nama}); $("#pySt").textContent="✓ Tersimpan"; setTimeout(()=>{ const e=$("#pySt"); if(e) e.textContent=""; },2500); }
       catch(e){ $("#pySt").textContent=""; toast(e.message); } };
-    ["#pyDp","#pyDpd","#pyLs","#pyLsd"].forEach(id=>$(id).onchange=savePay); }
+    ["#pyDp","#pyDpd","#pyLs","#pyLsd","#pyDpn","#pyLsn"].forEach(id=>$(id).onchange=savePay);
+    ["#pyDpn","#pyLsn"].forEach(id=>$(id).addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); e.target.blur(); } })); }
   if($("#oeBtn")){ $("#oeBtn").onclick=()=>{ $("#oeBox").hidden=!$("#oeBox").hidden; if(!$("#oeBox").hidden) $("#oeC").focus(); }; $("#oeCancel").onclick=()=>{ $("#oeBox").hidden=true; };
     $("#oeSave").onclick=async()=>{ const b=$("#oeSave"); b.disabled=true; b.textContent="Menyimpan…";
       try{ const r=await run("updateOrder",no,{no:$("#oeNo").value.trim(),c:$("#oeC").value.trim(),o:$("#oeO").value.trim(),ok:$("#oeOk").value});
