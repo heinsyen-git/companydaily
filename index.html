@@ -197,6 +197,9 @@ body.is-dragging,body.is-dragging *{cursor:grabbing!important;user-select:none}
 .sh-new{display:grid;grid-template-columns:1fr 170px auto;gap:8px;margin-bottom:12px}
 .sh-t td small{display:block;color:var(--muted);font-size:11px}.sh-t tr.off td{opacity:.6}.sh-t td.act{white-space:nowrap;text-align:right}
 @media(max-width:640px){.sh-new{grid-template-columns:1fr}}
+.paybar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 14px;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:0 0 14px}
+.paybar>b{align-self:center;font-size:14px}.paybar label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:var(--muted)}.paybar .in{min-width:140px;padding:7px 10px}
+.paybar .hint{align-self:center;color:var(--ok);font-weight:700}
 [hidden]{display:none!important}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
 .top-in{max-width:1180px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -459,6 +462,12 @@ async function reload(quiet){ syncing(true);
 const busy=()=>(typeof SQ!=="undefined"&&(SQ.length||SQRUN))||$("#dlg").open||$("#setDlg").open||(document.activeElement&&document.activeElement.matches("input,select,textarea"));
 const allItems=()=>DB.orders.flatMap(o=>o.items.filter(i=>!i.j).map(i=>({o,i})));
 const PICS=()=>DB.users.filter(u=>u.role!=="Manager").map(u=>u.nama);
+/* pilihan PIC: semua pengguna + daftar karyawan (sheet Pengaturan "Daftar Karyawan") */
+const PIC_OPTS=()=>[...new Set([...(DB.users||[]).map(u=>u.nama),...(DB.staff||[])].filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+const picSelect=(cur,dis)=>{ const L=PIC_OPTS(); if(cur&&!L.includes(cur)) L.push(cur); return `<select class="in" data-f="p"${dis}><option value="">– Pilih PIC –</option>${L.map(n=>`<option${n===cur?" selected":""}>${esc(n)}</option>`).join("")}</select>`; };
+/* pembayaran order */
+const payBadge=o=>`${/^sudah/i.test(o.dp||"")?`<span class="pill s-selesai" title="DP ${o.dpd?fmt(o.dpd):""}">DP ✓</span>`:o.dp?`<span class="pill s-belum">Belum DP</span>`:""}${/^lunas/i.test(o.ls||"")?`<span class="pill s-selesai" title="Lunas ${o.lsd?fmt(o.lsd):""}">Lunas ✓</span>`:o.ls?`<span class="pill s-menunggu">Belum lunas</span>`:""}`;
+const payText=o=>[o.dp?`DP: ${o.dp}${o.dpd?" ("+dmyFull(o.dpd)+")":""}`:"",o.ls?`Pelunasan: ${o.ls}${o.lsd?" ("+dmyFull(o.lsd)+")":""}`:""].filter(Boolean).join("\n");
 const today=()=>DB.updates.filter(u=>u.date===TODAY);
 
 /* ---------- login ---------- */
@@ -755,7 +764,7 @@ function renderOrders(){
     <select class="in" id="opic"><option value="">Semua PIC</option>${pics.map(p=>`<option${OF.pic===p?" selected":""}>${esc(p)}</option>`).join("")}</select></div>
   <div class="olist">${(()=>{ RANK=new Map(newestFirst(DB.orders).map((o,i)=>[o.no,i+1])); return ""; })()}${list.map((o,idx)=>{ const its=realItems(o), n=its.length, d=its.filter(i=>DONE(i.st)).length, late=its.filter(isLate).length, w=its.filter(i=>/Menunggu/.test(i.st)).length, on=its.filter(i=>i.st==="On proses").length, hold=its.filter(i=>i.st==="Hold").length, subs=o.items.filter(i=>i.j).length, act=its.filter(itemFilter()).length, open=EXP.has(o.no);
     return `<div class="order${open?" open":""}"><span class="o-num">${RANK.get(o.no)||idx+1}</span><div class="o-main" data-no="${esc(o.no)}" role="button" tabindex="0"><span class="no">${esc(o.no)}${o.ok?`. OK proses ${fmt(o.ok)}`:""}${lastOk(o)&&lastOk(o)!==(o.ok||"")?` · <b class="lanjut">lanjutan ${fmt(lastOk(o))}</b>`:""}</span><h3>${esc(o.c)}</h3><p>${esc(o.o)}${subs?` <span class="subs">${subs} sub-proses</span>`:""}</p></div>
-      <div class="o-side"><div class="prog"><span>${d}/${n} selesai</span><span class="bar"><i style="width:${n?d/n*100:0}%"></i></span></div><div class="o-pills">${late?`<span class="pill s-late">${late} lewat target</span>`:""}${w?`<span class="pill s-menunggu">${w} menunggu</span>`:""}${on?`<span class="pill s-on">${on} on proses</span>`:""}${hold?`<span class="pill s-hold">${hold} hold</span>`:""}</div>
+      <div class="o-side"><div class="prog"><span>${d}/${n} selesai</span><span class="bar"><i style="width:${n?d/n*100:0}%"></i></span></div><div class="o-pills">${payBadge(o)}${late?`<span class="pill s-late">${late} lewat target</span>`:""}${w?`<span class="pill s-menunggu">${w} menunggu</span>`:""}${on?`<span class="pill s-on">${on} on proses</span>`:""}${hold?`<span class="pill s-hold">${hold} hold</span>`:""}</div>
       ${act?`<button class="o-exp" data-exp="${esc(o.no)}" aria-expanded="${open}">${open?"Tutup":"Lihat "+act+" item "+filterLabel()} <span class="chev">▾</span></button>`:""}</div>
       ${open?`<div class="o-items">${expandHtml(o)}</div>`:""}</div>`; }).join("")||'<p class="hint">Tidak ada order.</p>'}</div>`;
   $("#oq").oninput=e=>{ OF.q=e.target.value; const p=e.target.selectionStart; renderOrders(); const n=$("#oq"); n.focus(); n.setSelectionRange(p,p); };
@@ -774,12 +783,17 @@ function openNewOrder(){
     <label class="f">Tgl OK proses<input class="in" id="nOk" type="date" value="${TODAY}"></label>
     <label class="f full">Nama perusahaan<input class="in" id="nC" placeholder="PT ..."></label>
     <label class="f full">Jenis order<input class="in" id="nO" placeholder="Misalnya Pendirian PMA, Perubahan direksi"></label>
+    <label class="f">Status DP<select class="in" id="nDp"><option value="">–</option><option>Belum DP</option><option>Sudah DP</option></select></label>
+    <label class="f">Tgl bayar DP<input class="in" id="nDpd" type="date"></label>
+    <label class="f">Status pelunasan<select class="in" id="nLs"><option value="">–</option><option>Belum lunas</option><option>Lunas</option></select></label>
+    <label class="f">Tgl pelunasan<input class="in" id="nLsd" type="date"></label>
     <label class="f full">Sub-proses / item awal (opsional, satu per baris)<textarea class="in" id="nItems" placeholder="Awali dengan # untuk judul sub-proses, contoh:&#10;#PENINGKATAN MODAL DASAR&#10;RUPS&#10;Akta Perubahan&#10;#UPDATE OSS&#10;Update OSS - Perubahan Saham"></textarea></label>
   </div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn pri" id="nSave">Buat order</button><button class="btn" id="nCancel">Batal</button></div>`;
   $("#nCancel").onclick=()=>$("#dlg").close();
   $("#nSave").onclick=async()=>{ const c=$("#nC").value.trim(), o=$("#nO").value.trim(); if(!c||!o){ toast("Isi nama perusahaan dan jenis order"); return; }
     const b=$("#nSave"); b.disabled=true; b.textContent="Menyimpan…";
-    try{ const r=await run("addOrder",{no:$("#nNo").value.trim(),c,o,ok:$("#nOk").value}); r.items=[]; DB.orders.push(r);
+    try{ const dp=$("#nDp").value, ls=$("#nLs").value; if(/^sudah/i.test(dp)&&!$("#nDpd").value) $("#nDpd").value=TODAY; if(/^lunas/i.test(ls)&&!$("#nLsd").value) $("#nLsd").value=TODAY;
+      const r=await run("addOrder",{no:$("#nNo").value.trim(),c,o,ok:$("#nOk").value,dp,dpd:/^sudah/i.test(dp)?$("#nDpd").value:"",ls,lsd:/^lunas/i.test(ls)?$("#nLsd").value:""}); r.items=[]; DB.orders.push(r);
       const lines=$("#nItems").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean); let after=null;
       for(const ln of lines){ const j=ln.startsWith("#"); const it=await run("addItem",r.no,{d:j?ln.replace(/^#+\s*/,"").toUpperCase():ln,j},null); r.items.push(it); }
       toast("Order dibuat"); OF.q=""; OF.st="aktif"; renderOrders(); openOrder(r.no);
@@ -803,7 +817,7 @@ function openOrder(no){ OPEN_NO=no;
   const can=i=>!F||i.p===ME.nama;
   const row=(i,k)=>{ if(i.j) return `<tr class="hd" data-k="${k}"><td colspan="8"><div class="hdw">${F?"":'<span class="drag" title="Seret untuk memindahkan" aria-label="Pindahkan">⋮⋮</span>'}<span class="hd-ic">▸</span><input class="in hd-in" data-f="d" value="${esc(i.d)}"${F?" disabled":""}><span class="hd-date" title="Tanggal OK proses lanjutan"><small>Tgl OK</small><span class="dwrap"><input class="in dt" data-f="s" value="${dmyShow(i.s)}" placeholder="ddmmyy" maxlength="20" autocomplete="off"${F?" disabled":""}><button type="button" class="dpick" data-pick title="Pilih dari kalender"${F?" disabled":""}>▾</button><input type="date" class="dhid" tabindex="-1" aria-hidden="true" value="${esc(i.s||"")}"></span></span></div></td><td class="act">${F?"":`<button class="mini add" data-ins="${k}" title="Sisipkan di bawah baris ini">+</button><button class="mini" data-unj="${k}" title="Jadikan item biasa">↺</button><button class="mini del" data-del="${k}" title="Hapus">🗑</button>`}</td></tr>`;
     const dis=can(i)?"":" disabled"; return `<tr data-k="${k}"><td><div class="dcell">${F?"":'<span class="drag" title="Seret untuk memindahkan" aria-label="Pindahkan">⋮⋮</span>'}<input class="in" data-f="d" value="${esc(i.d)}"${F?" disabled":""}></div></td>
-    <td><input class="in" data-f="p" list="picList" value="${esc(i.p)}" placeholder="Ketik nama PIC" autocomplete="off"${F?" disabled":""}></td>
+    <td>${picSelect(i.p,F?" disabled":"")}</td>
     <td><input class="in" data-f="t" value="${esc(i.t)}" list="places"${dis}></td>
     <td><input class="in" data-f="h" type="number" min="0" value="${i.h??""}"${dis}></td>
     <td><span class="dwrap"><input class="in dt" data-f="s" value="${dmyShow(i.s)}" placeholder="ddmmyy" maxlength="20" autocomplete="off"${dis}><button type="button" class="dpick" data-pick title="Pilih dari kalender"${dis}>▾</button><input type="date" class="dhid" tabindex="-1" aria-hidden="true" value="${esc(i.s)}"></span></td>
@@ -817,7 +831,13 @@ function openOrder(no){ OPEN_NO=no;
     <label class="f">Tgl OK proses<input class="in" id="oeOk" type="date" value="${esc(o.ok)}"></label>
     <label class="f full">Nama perusahaan<input class="in" id="oeC" value="${esc(o.c)}"></label>
     <label class="f full">Jenis order<input class="in" id="oeO" value="${esc(o.o)}"></label></div>
-    <div style="display:flex;gap:8px;margin-top:10px"><button class="btn pri" id="oeSave">Simpan</button><button class="btn" id="oeCancel">Batal</button></div></div>`}
+    <div style="display:flex;gap:8px;margin-top:10px"><button class="btn pri" id="oeSave">Simpan</button><button class="btn" id="oeCancel">Batal</button></div></div>
+  <div class="paybar"><b>💰 Pembayaran</b>
+    <label>DP<select class="in" id="pyDp"><option value="">–</option><option${o.dp==="Belum DP"?" selected":""}>Belum DP</option><option${/^sudah/i.test(o.dp||"")?" selected":""}>Sudah DP</option></select></label>
+    <label class="pyd" ${/^sudah/i.test(o.dp||"")?"":"hidden"}>Tgl bayar DP<input class="in" type="date" id="pyDpd" value="${esc(o.dpd||"")}"></label>
+    <label>Pelunasan<select class="in" id="pyLs"><option value="">–</option><option${o.ls==="Belum lunas"?" selected":""}>Belum lunas</option><option${/^lunas/i.test(o.ls||"")?" selected":""}>Lunas</option></select></label>
+    <label class="pyl" ${/^lunas/i.test(o.ls||"")?"":"hidden"}>Tgl pelunasan<input class="in" type="date" id="pyLsd" value="${esc(o.lsd||"")}"></label>
+    <span class="hint" id="pySt"></span></div>`}
   <div class="ohead"><h3 style="font-size:15px;margin:0">Item dokumen</h3>
     <label class="chain"><input type="checkbox" id="chainOn"${CHAIN?" checked":""}> Tgl submit berikutnya otomatis lanjut dari target item sebelumnya</label></div>
   <div class="tw"><table class="t fit"><colgroup><col style="width:18%"><col style="width:8.5%"><col style="width:9%"><col style="width:5%"><col style="width:10%"><col style="width:10%"><col style="width:11.5%"><col style="width:20.5%"><col style="width:7.5%"></colgroup>
@@ -837,6 +857,13 @@ function openOrder(no){ OPEN_NO=no;
     b.disabled=true; b.textContent="Menghapus…";
     try{ await run("deleteOrder",no); DB.orders=DB.orders.filter(x=>x.no!==no); delete DB.hist[no]; EXP.delete(no); $("#dlg").close(); toast("Order "+no+" dihapus"); renderOrders(); }
     catch(e){ toast(e.message); b.disabled=false; b.textContent="🗑 Hapus order"; } };
+  if($("#pyDp")){ const savePay=async()=>{ const dp=$("#pyDp").value, ls=$("#pyLs").value;
+      $(".paybar .pyd").hidden=!/^sudah/i.test(dp); $(".paybar .pyl").hidden=!/^lunas/i.test(ls);
+      if(/^sudah/i.test(dp)&&!$("#pyDpd").value) $("#pyDpd").value=TODAY; if(/^lunas/i.test(ls)&&!$("#pyLsd").value) $("#pyLsd").value=TODAY;
+      const f={dp,dpd:/^sudah/i.test(dp)?$("#pyDpd").value:"",ls,lsd:/^lunas/i.test(ls)?$("#pyLsd").value:""}; $("#pySt").textContent="Menyimpan…";
+      try{ const r=await run("updateOrder",no,f); Object.assign(o,{dp:r.dp,dpd:r.dpd,ls:r.ls,lsd:r.lsd}); if(r.note) (DB.hist[no]=DB.hist[no]||[]).push({d:TODAY,t:nowHM(),no,x:r.note,by:ME.nama}); $("#pySt").textContent="✓ Tersimpan"; setTimeout(()=>{ const e=$("#pySt"); if(e) e.textContent=""; },2500); }
+      catch(e){ $("#pySt").textContent=""; toast(e.message); } };
+    ["#pyDp","#pyDpd","#pyLs","#pyLsd"].forEach(id=>$(id).onchange=savePay); }
   if($("#oeBtn")){ $("#oeBtn").onclick=()=>{ $("#oeBox").hidden=!$("#oeBox").hidden; if(!$("#oeBox").hidden) $("#oeC").focus(); }; $("#oeCancel").onclick=()=>{ $("#oeBox").hidden=true; };
     $("#oeSave").onclick=async()=>{ const b=$("#oeSave"); b.disabled=true; b.textContent="Menyimpan…";
       try{ const r=await run("updateOrder",no,{no:$("#oeNo").value.trim(),c:$("#oeC").value.trim(),o:$("#oeO").value.trim(),ok:$("#oeOk").value});
@@ -929,7 +956,7 @@ function reportHtml(R,forEmail){
       // kolom TANGGAL OK PROSES dipecah per proses lanjutan (judul sub-proses yang bertanggal)
       const starts=[0]; x.o.items.forEach((i,k)=>{ if(i.j&&i.s) starts.push(k+1); }); const segLen=st0=>{ const ix=starts.indexOf(st0); return (ix+1<starts.length?starts[ix+1]:span)-st0; };
       const fCell=(st0,val)=>`<td rowspan="${segLen(st0)}" style="${bd};text-align:center;font-weight:700;white-space:nowrap">${val}</td>`;
-      let h=`<tr><td rowspan="${span}" style="${bd};text-align:center">${n}</td><td rowspan="${span}" style="${bd};text-align:center">${esc(x.o.no)}</td><td rowspan="${span}" style="${bd};text-align:center;font-weight:700">${esc(x.o.c)}</td>${fCell(0,x.o.ok?dmyFull(x.o.ok):"-")}<td colspan="8" style="${bd};background:#ED7D31;text-align:center;font-weight:700">${esc(x.o.o)}</td></tr>`;
+      let h=`<tr><td rowspan="${span}" style="${bd};text-align:center">${n}</td><td rowspan="${span}" style="${bd};text-align:center">${esc(x.o.no)}</td><td rowspan="${span}" style="${bd};text-align:center;font-weight:700">${esc(x.o.c)}${payText(x.o)?`<div style="font-weight:400;font-size:11px;margin-top:6px;white-space:pre-line;color:#333">${esc(payText(x.o))}</div>`:""}</td>${fCell(0,x.o.ok?dmyFull(x.o.ok):"-")}<td colspan="8" style="${bd};background:#ED7D31;text-align:center;font-weight:700">${esc(x.o.o)}</td></tr>`;
       x.o.items.forEach((i,k)=>{ if(i.j){ h+=`<tr>${i.s?fCell(k+1,dmyFull(i.s)):""}<td colspan="8" style="${bd};background:#ED7D31;text-align:center;font-weight:700">${esc(i.d)}</td></tr>`; return; }
         const late=isLate(i), red=late?";color:#C00000;font-weight:700":"", tg=targetOf(i);
         h+=`<tr><td style="${bd}">${esc(i.d)}</td><td style="${bd};text-align:center">${esc(i.p||"-")}</td><td style="${bd};text-align:center">${esc(i.t||"-")}</td><td style="${bd};text-align:center;white-space:nowrap">${i.h?i.h+" Hari Kerja":"-"}</td><td style="${bd};text-align:center;white-space:nowrap">${i.s?dmyFull(i.s):"-"}</td><td style="${bd};text-align:center;white-space:nowrap${red}">${tg?dmyFull(tg):"-"}</td><td style="${bd};text-align:center;background:${stBg(i.st)}${red}">${esc(i.st)}${late?" (lewat target)":""}</td><td style="${bd};white-space:pre-line">${esc(i.k||"")}</td></tr>`; });
@@ -960,7 +987,7 @@ async function buildXlsx(R){
     for(let c=2;c<=9;c++) put(c,"",H1); ["DOK. SUBMIT","TARGET SELESAI","CURRENT STATUS","KETERANGAN"].forEach((t,k)=>put(10+k,t,H2)); rows[r]={hpt:36}; r++;
     const ORG={fill:{fgColor:{rgb:"ED7D31"}},font:{name:FN,sz:12,bold:true}};
     list.forEach((x,n)=>{ const start=r;
-      put(2,n+1,st({font:{name:FN,sz:12,bold:true}})); put(3,x.o.no,st({font:{name:FN,sz:12,bold:true}})); put(4,x.o.c,st({font:{name:FN,sz:12,bold:true}})); put(5,x.o.ok?dmyFull(x.o.ok):"-",st({font:{name:FN,sz:12,bold:true}}));
+      put(2,n+1,st({font:{name:FN,sz:12,bold:true}})); put(3,x.o.no,st({font:{name:FN,sz:12,bold:true}})); put(4,x.o.c+(payText(x.o)?"\n"+payText(x.o):""),st({font:{name:FN,sz:12,bold:true}})); put(5,x.o.ok?dmyFull(x.o.ok):"-",st({font:{name:FN,sz:12,bold:true}}));
       put(6,x.o.o,st(ORG)); for(let c=7;c<=13;c++) put(c,"",st(ORG)); merges.push({s:{r,c:6},e:{r,c:13}}); rows[r]={hpt:30}; r++;
       const fStarts=[start];
       x.o.items.forEach(i=>{ for(let c=2;c<=5;c++) put(c,"",st());
