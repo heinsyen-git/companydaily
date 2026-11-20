@@ -207,6 +207,7 @@ body.is-dragging,body.is-dragging *{cursor:grabbing!important;user-select:none}
 .savechip,.dsave{position:relative;overflow:hidden}
 .savechip b,.dsave b{font-variant-numeric:tabular-nums}
 .cbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(0,0,0,.06)}.cbar i{display:block;height:100%;width:0;background:currentColor;transition:width .15s linear}
+.seg{display:inline-flex;background:var(--soft);border-radius:10px;padding:3px;gap:2px;margin:0 0 12px}.seg button{border:0;background:transparent;padding:7px 16px;border-radius:8px;font:inherit;font-weight:700;font-size:14px;color:var(--muted);cursor:pointer}.seg button.on{background:var(--paper);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 [hidden]{display:none!important}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
 .top-in{max-width:1180px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -1059,18 +1060,24 @@ let QR={m:"",st:""};
 function quotData(){ const Q=(DB.quot||[]).slice().sort((a,b)=>(b.d||"").localeCompare(a.d||""));
   const list=Q.filter(q=>(!QR.m||String(q.d||"").slice(0,7)===QR.m)&&(!QR.st||q.st===QR.st));
   const by={}; list.forEach(q=>{ const k=q.st||"(tanpa status)"; by[k]=by[k]||{n:0,rp:0}; by[k].n++; by[k].rp+=qNum(q.rp); });
-  const total=list.reduce((a,q)=>a+qNum(q.rp),0), per=QR.m?new Date(QR.m+"-01T00:00:00").toLocaleDateString("id-ID",{month:"long",year:"numeric"}):"Semua periode";
-  return {list,by,total,per,date:TODAY,by_:ME.nama}; }
+  const act=list.filter(q=>!isCancel(q)), can=list.filter(isCancel);
+  const total=act.reduce((a,q)=>a+qNum(q.rp),0), totalC=can.reduce((a,q)=>a+qNum(q.rp),0), per=QR.m?new Date(QR.m+"-01T00:00:00").toLocaleDateString("id-ID",{month:"long",year:"numeric"}):"Semua periode";
+  return {list,act,can,by,total,totalC,per,date:TODAY,by_:ME.nama}; }
 function quotReportHtml(D){
   const bd="border:1px solid #000;padding:5px 7px;font:12px 'Malgun Gothic',Arial,sans-serif;vertical-align:top";
   const th=(t,ex)=>`<th style="${bd};background:#73F5DF;font-weight:700;text-align:center;vertical-align:middle${ex||""}">${t}</th>`;
-  const sum=Object.keys(D.by).sort((a,b)=>D.by[b].rp-D.by[a].rp).map(k=>`<tr><td style="${bd};background:${qBgX(k)};font-weight:700">${esc(k)}</td><td style="${bd};text-align:center">${D.by[k].n}</td><td style="${bd};text-align:right">${rpS(D.by[k].rp)}</td></tr>`).join("");
+  const ks=Object.keys(D.by).filter(k=>!/cancel|batal/i.test(k)).sort((a,b)=>D.by[b].rp-D.by[a].rp);
+  const sum=ks.map(k=>`<tr><td style="${bd};background:${qBgX(k)};font-weight:700">${esc(k)}</td><td style="${bd};text-align:center">${D.by[k].n}</td><td style="${bd};text-align:right">${rpS(D.by[k].rp)}</td></tr>`).join("");
+  const row=(q,i)=>`<tr><td style="${bd};text-align:center">${i+1}</td><td style="${bd};text-align:center;white-space:nowrap">${q.d?dmyFull(q.d):"-"}</td><td style="${bd}">${esc(q.kat||"-")}</td><td style="${bd};font-weight:700">${esc(q.c||"-")}</td><td style="${bd}">${esc(q.o||"-")}</td><td style="${bd};text-align:right;white-space:nowrap">${qNum(q.rp)?rpS(qNum(q.rp)):"-"}</td><td style="${bd};text-align:center;font-weight:700;background:${qBgX(q.st)}">${esc(q.st||"-")}</td><td style="${bd};white-space:pre-line">${esc(q.note||"")}</td><td style="${bd};text-align:center">${esc(q.by||"-")}</td></tr>`;
+  const head=`<tr>${th("NO",";width:34px")}${th("TANGGAL",";width:84px")}${th("KATEGORI")}${th("PERUSAHAAN")}${th("ORDER")}${th("JUMLAH (Rp)",";width:110px")}${th("STATUS",";width:96px")}${th("HAL YANG DIBAHAS DENGAN KLIEN")}${th("DIPERBARUI",";width:90px")}</tr>`;
   return `<div style="color:#000"><div style="font:700 16px 'Malgun Gothic',Arial;text-align:center;margin:6px 0 2px">DAFTAR QUOTATION COMPANY TEAM</div>
   <div style="font:700 12px 'Malgun Gothic',Arial;display:flex;justify-content:space-between;margin-bottom:8px"><span>Periode: ${esc(D.per)}${QR.st?" · Status: "+esc(QR.st):""}</span><span>${fmtLong(D.date)}</span></div>
-  <table style="border-collapse:collapse;margin-bottom:12px;min-width:360px"><tr>${th("STATUS")}${th("JUMLAH")}${th("TOTAL NILAI")}</tr>${sum}<tr><td style="${bd};font-weight:700;background:#F2F2F2">TOTAL</td><td style="${bd};text-align:center;font-weight:700;background:#F2F2F2">${D.list.length}</td><td style="${bd};text-align:right;font-weight:700;background:#F2F2F2">${rpS(D.total)}</td></tr></table>
-  <table style="border-collapse:collapse;width:100%"><tr>${th("NO",";width:34px")}${th("TANGGAL",";width:84px")}${th("KATEGORI")}${th("PERUSAHAAN")}${th("ORDER")}${th("JUMLAH (Rp)",";width:110px")}${th("STATUS",";width:96px")}${th("HAL YANG DIBAHAS DENGAN KLIEN")}${th("DIPERBARUI",";width:90px")}</tr>
-  ${D.list.map((q,i)=>`<tr><td style="${bd};text-align:center">${i+1}</td><td style="${bd};text-align:center;white-space:nowrap">${q.d?dmyFull(q.d):"-"}</td><td style="${bd}">${esc(q.kat||"-")}</td><td style="${bd};font-weight:700">${esc(q.c||"-")}</td><td style="${bd}">${esc(q.o||"-")}</td><td style="${bd};text-align:right;white-space:nowrap">${qNum(q.rp)?rpS(qNum(q.rp)):"-"}</td><td style="${bd};text-align:center;font-weight:700;background:${qBgX(q.st)}">${esc(q.st||"-")}</td><td style="${bd};white-space:pre-line">${esc(q.note||"")}</td><td style="${bd};text-align:center">${esc(q.by||"-")}</td></tr>`).join("")||`<tr><td colspan="9" style="${bd};text-align:center">Tidak ada data</td></tr>`}
-  <tr><td colspan="5" style="${bd};text-align:right;font-weight:700;background:#F2F2F2">TOTAL</td><td style="${bd};text-align:right;font-weight:700;background:#F2F2F2;white-space:nowrap">${rpS(D.total)}</td><td colspan="3" style="${bd};background:#F2F2F2"></td></tr></table></div>`;
+  <table style="border-collapse:collapse;margin-bottom:12px;min-width:360px"><tr>${th("STATUS")}${th("JUMLAH")}${th("TOTAL NILAI")}</tr>${sum}<tr><td style="${bd};font-weight:700;background:#F2F2F2">TOTAL (tanpa cancel)</td><td style="${bd};text-align:center;font-weight:700;background:#F2F2F2">${D.act.length}</td><td style="${bd};text-align:right;font-weight:700;background:#F2F2F2">${rpS(D.total)}</td></tr>${D.can.length?`<tr><td style="${bd};color:#777;font-style:italic">Cancel (history, tidak dihitung)</td><td style="${bd};text-align:center;color:#777">${D.can.length}</td><td style="${bd};text-align:right;color:#777;text-decoration:line-through">${rpS(D.totalC)}</td></tr>`:""}</table>
+  <table style="border-collapse:collapse;width:100%">${head}
+  ${D.act.map(row).join("")||`<tr><td colspan="9" style="${bd};text-align:center">Tidak ada data</td></tr>`}
+  <tr><td colspan="5" style="${bd};text-align:right;font-weight:700;background:#F2F2F2">TOTAL</td><td style="${bd};text-align:right;font-weight:700;background:#F2F2F2;white-space:nowrap">${rpS(D.total)}</td><td colspan="3" style="${bd};background:#F2F2F2"></td></tr></table>
+  ${D.can.length?`<div style="font:700 14px 'Malgun Gothic',Arial;margin:18px 0 6px;color:#9C2F2F">HISTORY – QUOTATION CANCEL <span style="font-weight:400;font-size:12px;color:#555">(tidak dihitung dalam total)</span></div>
+  <table style="border-collapse:collapse;width:100%;opacity:.92">${head}${D.can.map(row).join("")}</table>`:""}</div>`;
 }
 async function buildQuotXlsx(D){
   const X=await loadXlsx(), wb=X.utils.book_new(), FN="Malgun Gothic";
@@ -1080,19 +1087,23 @@ async function buildQuotXlsx(D){
   put(1,"DAFTAR QUOTATION COMPANY TEAM",st({font:{name:FN,sz:15,bold:true},alignment:{horizontal:"center"},border:{}})); merges.push({s:{r,c:1},e:{r,c:9}}); r++;
   put(1,"Periode: "+D.per+(QR.st?" · Status: "+QR.st:""),st({font:{name:FN,sz:11,bold:true},border:{}})); put(9,fmtLong(D.date),st({font:{name:FN,sz:11,bold:true},alignment:{horizontal:"right"},border:{}})); r+=2;
   put(1,"STATUS",H); put(2,"JUMLAH",H); put(3,"TOTAL NILAI",H); r++;
-  Object.keys(D.by).sort((a,b)=>D.by[b].rp-D.by[a].rp).forEach(k=>{ put(1,k,st({font:{name:FN,sz:11,bold:true},fill:{fgColor:{rgb:qBgX(k).slice(1)}}})); put(2,D.by[k].n,st({alignment:{horizontal:"center"}})); put(3,D.by[k].rp,st(),"#,##0"); r++; });
-  const G=st({font:{name:FN,sz:11,bold:true},fill:{fgColor:{rgb:"F2F2F2"}}}); put(1,"TOTAL",G); put(2,D.list.length,Object.assign({},G,{alignment:{horizontal:"center"}})); put(3,D.total,G,"#,##0"); r+=2;
-  ["NO","TANGGAL","KATEGORI","PERUSAHAAN","ORDER","JUMLAH (Rp)","STATUS","HAL YANG DIBAHAS DENGAN KLIEN","DIPERBARUI"].forEach((t,k)=>put(1+k,t,H)); r++;
-  D.list.forEach((q,i)=>{ put(1,i+1,st({alignment:{horizontal:"center",vertical:"top"}})); put(2,q.d?dmyFull(q.d):"-",st({alignment:{horizontal:"center",vertical:"top"}})); put(3,q.kat||"-",st()); put(4,q.c||"-",st({font:{name:FN,sz:11,bold:true}}));
+  Object.keys(D.by).filter(k=>!/cancel|batal/i.test(k)).sort((a,b)=>D.by[b].rp-D.by[a].rp).forEach(k=>{ put(1,k,st({font:{name:FN,sz:11,bold:true},fill:{fgColor:{rgb:qBgX(k).slice(1)}}})); put(2,D.by[k].n,st({alignment:{horizontal:"center"}})); put(3,D.by[k].rp,st(),"#,##0"); r++; });
+  const G=st({font:{name:FN,sz:11,bold:true},fill:{fgColor:{rgb:"F2F2F2"}}}); put(1,"TOTAL (tanpa cancel)",G); put(2,D.act.length,Object.assign({},G,{alignment:{horizontal:"center"}})); put(3,D.total,G,"#,##0"); r++;
+  if(D.can.length){ const Ci=st({font:{name:FN,sz:11,italic:true,color:{rgb:"777777"}}}); put(1,"Cancel (history, tidak dihitung)",Ci); put(2,D.can.length,Object.assign({},Ci,{alignment:{horizontal:"center"}})); put(3,D.totalC,Ci,"#,##0"); r++; }
+  r++;
+  const tbl=(L,withTotal)=>{ ["NO","TANGGAL","KATEGORI","PERUSAHAAN","ORDER","JUMLAH (Rp)","STATUS","HAL YANG DIBAHAS DENGAN KLIEN","DIPERBARUI"].forEach((t,k)=>put(1+k,t,H)); r++;
+  L.forEach((q,i)=>{ put(1,i+1,st({alignment:{horizontal:"center",vertical:"top"}})); put(2,q.d?dmyFull(q.d):"-",st({alignment:{horizontal:"center",vertical:"top"}})); put(3,q.kat||"-",st()); put(4,q.c||"-",st({font:{name:FN,sz:11,bold:true}}));
     put(5,q.o||"-",st()); put(6,qNum(q.rp),st({alignment:{horizontal:"right",vertical:"top"}}),"#,##0"); put(7,q.st||"-",st({font:{name:FN,sz:11,bold:true},fill:{fgColor:{rgb:qBgX(q.st).slice(1)}},alignment:{horizontal:"center",vertical:"top"}}));
     put(8,q.note||"",st()); put(9,q.by||"-",st({alignment:{horizontal:"center",vertical:"top"}})); r++; });
-  put(1,"TOTAL",G); for(let c=2;c<=5;c++) put(c,"",G); merges.push({s:{r,c:1},e:{r,c:5}}); put(6,D.total,G,"#,##0"); for(let c=7;c<=9;c++) put(c,"",G); r++;
+  if(withTotal){ put(1,"TOTAL",G); for(let c=2;c<=5;c++) put(c,"",G); merges.push({s:{r,c:1},e:{r,c:5}}); put(6,D.total,G,"#,##0"); for(let c=7;c<=9;c++) put(c,"",G); r++; } };
+  tbl(D.act,true);
+  if(D.can.length){ r++; put(1,"HISTORY – QUOTATION CANCEL (tidak dihitung dalam total)",st({font:{name:FN,sz:12,bold:true,color:{rgb:"9C2F2F"}},border:{}})); r++; tbl(D.can,false); }
   ws["!ref"]=X.utils.encode_range({s:{r:0,c:0},e:{r:r,c:9}}); ws["!merges"]=merges; ws["!cols"]=[2,6,12,16,32,34,16,14,60,14].map(w=>({wch:w}));
   X.utils.book_append_sheet(wb,ws,"QUOTATION"); return X.write(wb,{bookType:"xlsx",type:"base64"});
 }
 function openQuotReport(){
   const months=[...new Set((DB.quot||[]).map(q=>String(q.d||"").slice(0,7)).filter(Boolean))].sort().reverse(), sts=[...new Set((DB.quot||[]).map(q=>q.st).filter(Boolean))];
-  const paint=()=>{ const D=quotData(); $("#dS").textContent=`${D.list.length} quotation, total ${rpS(D.total)} · ${D.per}. Data diambil dari Google Sheets saat ini.`; $("#qrBox").innerHTML=quotReportHtml(D); return D; };
+  const paint=()=>{ const D=quotData(); $("#dS").textContent=`${D.act.length} quotation aktif, total ${rpS(D.total)} (tanpa cancel)${D.can.length?` · ${D.can.length} cancel di history`:""} · ${D.per}.`; $("#qrBox").innerHTML=quotReportHtml(D); return D; };
   $("#dT").textContent="Collect data report – Quotation";
   $("#dB").innerHTML=`<div class="rep-actions"><select class="in" id="qrM" style="width:auto"><option value="">Semua periode</option>${months.map(m=>`<option value="${m}"${QR.m===m?" selected":""}>${new Date(m+"-01T00:00:00").toLocaleDateString("id-ID",{month:"long",year:"numeric"})}</option>`).join("")}</select>
     <select class="in" id="qrS" style="width:auto"><option value="">Semua status</option>${sts.map(x=>`<option${QR.st===x?" selected":""}>${esc(x)}</option>`).join("")}</select>
@@ -1111,21 +1122,26 @@ const QF={q:"",st:""};
 const rupiah=v=>{ const n=String(v||"").replace(/[^\d]/g,""); return n?"Rp "+(+n).toLocaleString("id-ID"):"–"; };
 const qCls=s=>/cancel|batal/i.test(s)?"s-cancel":/ok|deal|proses|setuju/i.test(s)?"s-selesai":/quot/i.test(s)?"s-menunggu":"s-belum";
 const qBg={"s-cancel":"var(--bad)","s-selesai":"var(--ok)","s-menunggu":"var(--warn)","s-belum":"var(--muted)"};
+const isCancel=q=>/cancel|batal/i.test(q.st||"");
+let QV="aktif";
 function renderQuot(){
-  const Q=(DB.quot||[]), sts=[...new Set(Q.map(q=>q.st).filter(Boolean))];
+  const ALL=(DB.quot||[]), Q=ALL.filter(q=>QV==="history"?isCancel(q):!isCancel(q)), sts=[...new Set(Q.map(q=>q.st).filter(Boolean))];
+  if(QF.st&&!sts.includes(QF.st)) QF.st="";
   const list=Q.filter(q=>(!QF.st||q.st===QF.st)&&(!QF.q||[q.kat,q.c,q.o,q.note,q.st].join(" ").toLowerCase().includes(QF.q.toLowerCase())));
-  const total=list.reduce((a,q)=>a+(+String(q.rp||"").replace(/[^\d]/g,"")||0),0);
-  $("#v-quot").innerHTML=`<div class="head"><div><h1>Quotation</h1><p>Status pesanan dan hal yang dibahas dengan klien. ${Q.length} data${total?`, total ${rupiah(total)}`:""}.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="qRep">📊 Collect data report</button><button class="btn pri" id="qNew">+ Tambah quotation</button></div></div>
+  const total=list.reduce((a,q)=>a+(+String(q.rp||"").replace(/[^\d]/g,"")||0),0), nC=ALL.filter(isCancel).length;
+  $("#v-quot").innerHTML=`<div class="head"><div><h1>Quotation</h1><p>${QV==="history"?`History quotation yang <b>cancel</b>: ${Q.length} data${total?`, nilai ${rupiah(total)} (tidak dihitung dalam total)`:""}.`:`Status pesanan dan hal yang dibahas dengan klien. ${Q.length} data aktif${total?`, total ${rupiah(total)}`:""} (tanpa cancel).`}</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="qRep">📊 Collect data report</button><button class="btn pri" id="qNew">+ Tambah quotation</button></div></div>
+  <div class="seg qseg"><button class="${QV==="aktif"?"on":""}" data-qv="aktif">Aktif</button><button class="${QV==="history"?"on":""}" data-qv="history">History cancel (${nC})</button></div>
   <div class="tools"><input class="in grow" id="qq" placeholder="Cari perusahaan, order, kategori, atau pembahasan" value="${esc(QF.q)}">
     <select class="in" id="qst"><option value="">Semua status</option>${sts.map(x=>`<option${QF.st===x?" selected":""}>${esc(x)}</option>`).join("")}</select></div>
   <div class="card tw" style="padding:0"><table class="t qt"><colgroup><col style="width:46px"><col style="width:11%"><col style="width:17%"><col style="width:19%"><col style="width:13%"><col style="width:11%"><col><col style="width:96px"></colgroup>
     <tr><th>No</th><th>Kategori</th><th>Perusahaan</th><th>Order</th><th style="text-align:right">Jumlah (Rp)</th><th>Status order</th><th>Hal yang dibahas dengan klien</th><th></th></tr>
     ${list.map((q,i)=>`<tr><td class="qn">${i+1}</td><td>${esc(q.kat||"–")}</td><td><b>${esc(q.c)}</b></td><td>${esc(q.o)}${q.d?`<small>${fmt(q.d)}</small>`:""}</td><td class="qr">${rupiah(q.rp)}</td><td><span class="pill ${qCls(q.st)}">${esc(q.st||"–")}</span></td><td class="qnote">${esc(q.note||"")}${q.by?`<small>Diperbarui ${esc(q.by)}</small>`:""}</td>
-      <td class="act"><button class="mini" data-qe="${esc(q.id)}" title="Ubah">✎</button><button class="mini del" data-qd="${esc(q.id)}" title="Hapus">🗑</button></td></tr>`).join("")||`<tr><td colspan="8" class="hint" style="padding:18px">Belum ada quotation. Klik <b>+ Tambah quotation</b>.</td></tr>`}
+      <td class="act"><button class="mini" data-qe="${esc(q.id)}" title="Ubah">✎</button><button class="mini del" data-qd="${esc(q.id)}" title="Hapus">🗑</button></td></tr>`).join("")||`<tr><td colspan="8" class="hint" style="padding:18px">${QV==="history"?"Belum ada quotation yang cancel.":"Belum ada quotation. Klik <b>+ Tambah quotation</b>."}</td></tr>`}
   </table></div>`;
   $("#qNew").onclick=()=>openQuot(null); $("#qRep").onclick=()=>openQuotReport();
   $("#qq").oninput=e=>{ QF.q=e.target.value; const p=e.target.selectionStart; renderQuot(); const n=$("#qq"); n.focus(); n.setSelectionRange(p,p); };
   $("#qst").onchange=e=>{ QF.st=e.target.value; renderQuot(); };
+  $("#v-quot").querySelectorAll("[data-qv]").forEach(b=>b.onclick=()=>{ QV=b.dataset.qv; QF.st=""; renderQuot(); });
   $("#v-quot").querySelectorAll("[data-qe]").forEach(b=>b.onclick=()=>openQuot(DB.quot.find(q=>q.id===b.dataset.qe)));
   $("#v-quot").querySelectorAll("[data-qd]").forEach(b=>b.onclick=async()=>{ if(b.dataset.sure!=="1"){ b.dataset.sure="1"; b.textContent="Hapus?"; b.classList.add("sure"); setTimeout(()=>{ if(b.isConnected){ b.dataset.sure=""; b.textContent="🗑"; b.classList.remove("sure"); } },3000); return; }
     try{ await run("deleteQuot",b.dataset.qd); DB.quot=DB.quot.filter(q=>q.id!==b.dataset.qd); toast("Quotation dihapus"); renderQuot(); }catch(e){ toast(e.message); } });
