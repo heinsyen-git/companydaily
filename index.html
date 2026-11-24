@@ -199,7 +199,8 @@ body.is-dragging,body.is-dragging *{cursor:grabbing!important;user-select:none}
 @media(max-width:640px){.sh-new{grid-template-columns:1fr}}
 .paybar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 14px;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:0 0 14px}
 .paybar>b{align-self:center;font-size:14px}.paybar .pb-title{letter-spacing:.04em;color:var(--pri)}.paybar .in.rp{text-align:right;min-width:150px}
-.pb-total{display:flex;flex-direction:column;gap:2px;margin-left:auto;text-align:right;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:6px 14px}.pb-total small{font-size:11px;font-weight:700;color:var(--muted)}.pb-total b{font-size:18px;color:var(--ok)}.paybar label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:var(--muted)}.paybar .in{min-width:140px;padding:7px 10px}
+.pb-sum{display:flex;gap:8px;margin-left:auto}.pb-total.sisa b{color:var(--warn)}
+.pb-total{display:flex;flex-direction:column;gap:2px;text-align:right;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:6px 14px}.pb-total small{font-size:11px;font-weight:700;color:var(--muted)}.pb-total b{font-size:18px;color:var(--ok)}.paybar label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:var(--muted)}.paybar .in{min-width:140px;padding:7px 10px}
 .paybar .hint{align-self:center;color:var(--ok);font-weight:700}
 .pgtop{position:fixed;left:0;right:0;top:0;height:4px;z-index:90;background:rgba(127,140,160,.18);pointer-events:none}
 .pgtop i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--pri),#4C9BE8);transition:width .15s linear;border-radius:0 4px 4px 0}
@@ -208,6 +209,11 @@ body.is-dragging,body.is-dragging *{cursor:grabbing!important;user-select:none}
 .savechip b,.dsave b{font-variant-numeric:tabular-nums}
 .cbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(0,0,0,.06)}.cbar i{display:block;height:100%;width:0;background:currentColor;transition:width .15s linear}
 .seg{display:inline-flex;background:var(--soft);border-radius:10px;padding:3px;gap:2px;margin:0 0 12px}.seg button{border:0;background:transparent;padding:7px 16px;border-radius:8px;font:inherit;font-weight:700;font-size:14px;color:var(--muted);cursor:pointer}.seg button.on{background:var(--paper);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.hdpay{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 10px;margin:8px 0 2px 26px;padding:8px 10px;border-radius:10px;background:var(--paper);border:1px dashed var(--line)}
+.hdpay>b{align-self:center;font-size:12px;color:var(--pri)}.hdpay label{display:flex;flex-direction:column;gap:3px;font-size:11px;font-weight:700;color:var(--muted)}
+.hdpay .in{padding:6px 8px;font-size:13px;min-width:0;width:130px}.hdpay .in.rp{text-align:right}
+.hdpay .hp-sum{display:flex;flex-direction:column;align-items:flex-end;margin-left:auto;font-size:11px;color:var(--muted);font-weight:700}.hdpay .hp-sum b{font-size:15px;color:var(--warn)}
+.hdpay.ro{font-size:12px;color:var(--ink);border-style:solid}
 [hidden]{display:none!important}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
 .top-in{max-width:1180px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -486,13 +492,17 @@ const PICS=()=>DB.users.filter(u=>u.role!=="Manager").map(u=>u.nama);
 const PIC_OPTS=()=>[...new Set([...(DB.users||[]).map(u=>u.nama),...(DB.staff||[])].filter(Boolean))].sort((a,b)=>a.localeCompare(b));
 const picSelect=(cur,dis)=>{ const L=PIC_OPTS(); if(cur&&!L.includes(cur)) L.push(cur); return `<select class="in" data-f="p"${dis}><option value="">– Pilih PIC –</option>${L.map(n=>`<option${n===cur?" selected":""}>${esc(n)}</option>`).join("")}</select>`; };
 /* pembayaran order */
-const payBadge=o=>`${paidOf(o)?`<span class="pill s-on" title="Total dibayar">${rpS(paidOf(o))}</span>`:""}${/^sudah/i.test(o.dp||"")?`<span class="pill s-selesai" title="DP ${o.dpd?fmt(o.dpd):""}">DP ✓</span>`:o.dp?`<span class="pill s-belum">Belum DP</span>`:""}${/^lunas/i.test(o.ls||"")?`<span class="pill s-selesai" title="Lunas ${o.lsd?fmt(o.lsd):""}">Lunas ✓</span>`:o.ls?`<span class="pill s-menunggu">Belum lunas</span>`:""}`;
+const payBadge=o=>`${paidOf(o)?`<span class="pill s-on" title="Sudah dibayar">${rpS(paidOf(o))}</span>`:""}${(()=>{ const sh=(o.items||[]).filter(h=>h.j).reduce((a,h)=>a+hSisa(h),0), tot=(+o.tb?sisaOf(o):0)+sh; return tot>0?`<span class="pill s-menunggu" title="Total sisa pelunasan (order + proses lanjutan)">Sisa ${rpS(tot)}</span>`:""; })()}${/^sudah/i.test(o.dp||"")?`<span class="pill s-selesai" title="DP ${o.dpd?fmt(o.dpd):""}">DP ✓</span>`:o.dp?`<span class="pill s-belum">Belum DP</span>`:""}${/^lunas/i.test(o.ls||"")?`<span class="pill s-selesai" title="Lunas ${o.lsd?fmt(o.lsd):""}">Lunas ✓</span>`:o.ls?`<span class="pill s-menunggu">Belum lunas</span>`:""}`;
 const paidOf=o=>(/^sudah/i.test(o.dp||"")?(+o.dpn||0):0)+(/^lunas/i.test(o.ls||"")?(+o.lsn||0):0);
+const sisaOf=o=>Math.max(0,(+o.tb||0)-paidOf(o));
+/* pembayaran per sub-proses / proses lanjutan (baris judul) */
+const hPaid=h=>(+h.dpn||0)+(+h.lsn||0), hSisa=h=>Math.max(0,(+h.tb||0)-hPaid(h)), hHasPay=h=>!!(+h.tb||+h.dpn||+h.lsn);
+const hPayText=h=>hHasPay(h)?[+h.tb?`Total ${rpS(h.tb)}`:"",+h.dpn?`DP ${rpS(h.dpn)}${h.dpd?" ("+dmyFull(h.dpd)+")":""}`:"",+h.lsn?`Pelunasan ${rpS(h.lsn)}${h.lsd?" ("+dmyFull(h.lsd)+")":""}`:"",+h.tb?`Sisa ${rpS(hSisa(h))}`:""].filter(Boolean).join(" · "):"";
 const rpS=n=>"Rp "+(+n||0).toLocaleString("id-ID");
 /* kolom STATUS BAYAR terpisah: status (+nominal) dan tanggal bayar */
-const payStatusText=o=>[o.dp?`DP: ${o.dp}${/^sudah/i.test(o.dp)&&o.dpn?"\n"+rpS(o.dpn):""}`:"",o.ls?`Pelunasan: ${o.ls}${/^lunas/i.test(o.ls)&&o.lsn?"\n"+rpS(o.lsn):""}`:"",paidOf(o)?`Total: ${rpS(paidOf(o))}`:""].filter(Boolean).join("\n")||"-";
+const payStatusText=o=>[+o.tb?`Total bayar: ${rpS(o.tb)}`:"",...((o.items||[]).filter(h=>h.j&&hHasPay(h)).map(h=>`${h.d}: ${hPayText(h)}`)),o.dp?`DP: ${o.dp}${/^sudah/i.test(o.dp)&&o.dpn?" "+rpS(o.dpn):""}`:"",o.ls?`Pelunasan: ${o.ls}${/^lunas/i.test(o.ls)&&o.lsn?" "+rpS(o.lsn):""}`:"",paidOf(o)?`Sudah dibayar: ${rpS(paidOf(o))}`:"",+o.tb?`Sisa pelunasan: ${rpS(sisaOf(o))}`:""].filter(Boolean).join("\n")||"-";
 const payDateText=o=>[/^sudah/i.test(o.dp||"")&&o.dpd?`DP: ${dmyFull(o.dpd)}`:"",/^lunas/i.test(o.ls||"")&&o.lsd?`Pelunasan: ${dmyFull(o.lsd)}`:""].filter(Boolean).join("\n")||"-";
-const payBg=o=>/^lunas/i.test(o.ls||"")?"#C6EFCE":/^sudah/i.test(o.dp||"")?"#FFF2CC":o.dp||o.ls?"#F8CBAD":"#FFFFFF";
+const payBg=o=>/^lunas/i.test(o.ls||"")||(+o.tb&&sisaOf(o)===0)?"#C6EFCE":/^sudah/i.test(o.dp||"")?"#FFF2CC":o.dp||o.ls?"#F8CBAD":"#FFFFFF";
 const payText=o=>[o.dp?`DP: ${o.dp}${o.dpd?" ("+dmyFull(o.dpd)+")":""}${/^sudah/i.test(o.dp)&&o.dpn?" "+rpS(o.dpn):""}`:"",o.ls?`Pelunasan: ${o.ls}${o.lsd?" ("+dmyFull(o.lsd)+")":""}${/^lunas/i.test(o.ls)&&o.lsn?" "+rpS(o.lsn):""}`:"",paidOf(o)?`Total dibayar: ${rpS(paidOf(o))}`:""].filter(Boolean).join("\n");
 const today=()=>DB.updates.filter(u=>u.date===TODAY);
 
@@ -805,6 +815,7 @@ function openNewOrder(){
     <label class="f">Tgl OK proses<input class="in" id="nOk" type="date" value="${TODAY}"></label>
     <label class="f full">Nama perusahaan<input class="in" id="nC" placeholder="PT ..."></label>
     <label class="f full">Jenis order<input class="in" id="nO" placeholder="Misalnya Pendirian PMA, Perubahan direksi"></label>
+    <label class="f">Total bayar / nilai order (Rp)<input class="in" id="nTb" inputmode="numeric" placeholder="0"></label><span></span>
     <label class="f">Status DP<select class="in" id="nDp"><option value="">–</option><option>Belum DP</option><option>Sudah DP</option></select></label>
     <label class="f">Tgl bayar DP<input class="in" id="nDpd" type="date"></label>
     <label class="f">Nominal DP (Rp)<input class="in" id="nDpn" inputmode="numeric" placeholder="0"></label><span></span>
@@ -814,11 +825,11 @@ function openNewOrder(){
     <label class="f full">Sub-proses / item awal (opsional, satu per baris)<textarea class="in" id="nItems" placeholder="Awali dengan # untuk judul sub-proses, contoh:&#10;#PENINGKATAN MODAL DASAR&#10;RUPS&#10;Akta Perubahan&#10;#UPDATE OSS&#10;Update OSS - Perubahan Saham"></textarea></label>
   </div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn pri" id="nSave">Buat order</button><button class="btn" id="nCancel">Batal</button></div>`;
   $("#nCancel").onclick=()=>$("#dlg").close();
-  ["#nDpn","#nLsn"].forEach(id=>$(id).oninput=e=>{ const n=+e.target.value.replace(/[^\d]/g,"")||0; e.target.value=n?n.toLocaleString("id-ID"):""; });
+  ["#nDpn","#nLsn","#nTb"].forEach(id=>$(id).oninput=e=>{ const n=+e.target.value.replace(/[^\d]/g,"")||0; e.target.value=n?n.toLocaleString("id-ID"):""; });
   $("#nSave").onclick=async()=>{ const c=$("#nC").value.trim(), o=$("#nO").value.trim(); if(!c||!o){ toast("Isi nama perusahaan dan jenis order"); return; }
     const b=$("#nSave"); b.disabled=true; b.textContent="Menyimpan…";
     try{ const dp=$("#nDp").value, ls=$("#nLs").value; if(/^sudah/i.test(dp)&&!$("#nDpd").value) $("#nDpd").value=TODAY; if(/^lunas/i.test(ls)&&!$("#nLsd").value) $("#nLsd").value=TODAY;
-      const r=await run("addOrder",{no:$("#nNo").value.trim(),c,o,ok:$("#nOk").value,dp,dpd:/^sudah/i.test(dp)?$("#nDpd").value:"",ls,lsd:/^lunas/i.test(ls)?$("#nLsd").value:"",dpn:$("#nDpn").value,lsn:$("#nLsn").value}); r.items=[]; DB.orders.push(r);
+      const r=await run("addOrder",{no:$("#nNo").value.trim(),c,o,ok:$("#nOk").value,dp,dpd:/^sudah/i.test(dp)?$("#nDpd").value:"",ls,lsd:/^lunas/i.test(ls)?$("#nLsd").value:"",dpn:$("#nDpn").value,lsn:$("#nLsn").value,tb:$("#nTb").value}); r.items=[]; DB.orders.push(r);
       const lines=$("#nItems").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean); let after=null;
       for(const ln of lines){ const j=ln.startsWith("#"); const it=await run("addItem",r.no,{d:j?ln.replace(/^#+\s*/,"").toUpperCase():ln,j},null); r.items.push(it); }
       toast("Order dibuat"); OF.q=""; OF.st="aktif"; renderOrders(); openOrder(r.no);
@@ -840,7 +851,14 @@ function openOrder(no){ OPEN_NO=no;
   $("#dT").textContent=o.c; $("#dS").textContent=`No. order ${o.no}. ${o.o}${o.ok?". OK proses "+fmt(o.ok):""}`;
   const h=(DB.hist[no]||[]).slice().sort((a,b)=>(b.d+" "+(b.t||"")).localeCompare(a.d+" "+(a.t||"")));
   const can=i=>!F||i.p===ME.nama;
-  const row=(i,k)=>{ if(i.j) return `<tr class="hd" data-k="${k}"><td colspan="8"><div class="hdw">${F?"":'<span class="drag" title="Seret untuk memindahkan" aria-label="Pindahkan">⋮⋮</span>'}<span class="hd-ic">▸</span><input class="in hd-in" data-f="d" value="${esc(i.d)}"${F?" disabled":""}><span class="hd-date" title="Tanggal OK proses lanjutan"><small>Tgl OK</small><span class="dwrap"><input class="in dt" data-f="s" value="${dmyShow(i.s)}" placeholder="ddmmyy" maxlength="20" autocomplete="off"${F?" disabled":""}><button type="button" class="dpick" data-pick title="Pilih dari kalender"${F?" disabled":""}>▾</button><input type="date" class="dhid" tabindex="-1" aria-hidden="true" value="${esc(i.s||"")}"></span></span></div></td><td class="act">${F?"":`<button class="mini add" data-ins="${k}" title="Sisipkan di bawah baris ini">+</button><button class="mini" data-unj="${k}" title="Jadikan item biasa">↺</button><button class="mini del" data-del="${k}" title="Hapus">🗑</button>`}</td></tr>`;
+  const row=(i,k)=>{ if(i.j) return `<tr class="hd" data-k="${k}"><td colspan="8"><div class="hdw">${F?"":'<span class="drag" title="Seret untuk memindahkan" aria-label="Pindahkan">⋮⋮</span>'}<span class="hd-ic">▸</span><input class="in hd-in" data-f="d" value="${esc(i.d)}"${F?" disabled":""}><span class="hd-date" title="Tanggal OK proses lanjutan"><small>Tgl OK</small><span class="dwrap"><input class="in dt" data-f="s" value="${dmyShow(i.s)}" placeholder="ddmmyy" maxlength="20" autocomplete="off"${F?" disabled":""}><button type="button" class="dpick" data-pick title="Pilih dari kalender"${F?" disabled":""}>▾</button><input type="date" class="dhid" tabindex="-1" aria-hidden="true" value="${esc(i.s||"")}"></span></span></div>
+      ${F?(hHasPay(i)?`<div class="hdpay ro">💰 ${esc(hPayText(i))}</div>`:""):`<div class="hdpay" data-hp="${k}"><b>💰 Bayar</b>
+        <label>Total bayar<input class="in rp" data-pay="tb" inputmode="numeric" placeholder="0" value="${+i.tb?(+i.tb).toLocaleString("id-ID"):""}"></label>
+        <label>DP<input class="in rp" data-pay="dpn" inputmode="numeric" placeholder="0" value="${+i.dpn?(+i.dpn).toLocaleString("id-ID"):""}"></label>
+        <label>Tgl DP<input class="in" type="date" data-pay="dpd" value="${esc(i.dpd||"")}"></label>
+        <label>Pelunasan<input class="in rp" data-pay="lsn" inputmode="numeric" placeholder="0" value="${+i.lsn?(+i.lsn).toLocaleString("id-ID"):""}"></label>
+        <label>Tgl lunas<input class="in" type="date" data-pay="lsd" value="${esc(i.lsd||"")}"></label>
+        <span class="hp-sum"><small>Sisa pelunasan</small><b data-hsisa>${+i.tb?rpS(hSisa(i)):"–"}</b></span></div>`}</td><td class="act">${F?"":`<button class="mini add" data-ins="${k}" title="Sisipkan di bawah baris ini">+</button><button class="mini" data-unj="${k}" title="Jadikan item biasa">↺</button><button class="mini del" data-del="${k}" title="Hapus">🗑</button>`}</td></tr>`;
     const dis=can(i)?"":" disabled"; return `<tr data-k="${k}"><td><div class="dcell">${F?"":'<span class="drag" title="Seret untuk memindahkan" aria-label="Pindahkan">⋮⋮</span>'}<input class="in" data-f="d" value="${esc(i.d)}"${F?" disabled":""}></div></td>
     <td>${picSelect(i.p,F?" disabled":"")}</td>
     <td><input class="in" data-f="t" value="${esc(i.t)}" list="places"${dis}></td>
@@ -858,13 +876,14 @@ function openOrder(no){ OPEN_NO=no;
     <label class="f full">Jenis order<input class="in" id="oeO" value="${esc(o.o)}"></label></div>
     <div style="display:flex;gap:8px;margin-top:10px"><button class="btn pri" id="oeSave">Simpan</button><button class="btn" id="oeCancel">Batal</button></div></div>
   <div class="paybar"><b class="pb-title">STATUS BAYAR</b>
+    <label>Total bayar (Rp)<input class="in rp" id="pyTb" inputmode="numeric" placeholder="Nilai order" value="${o.tb?(+o.tb).toLocaleString("id-ID"):""}"></label>
     <label>DP<select class="in" id="pyDp"><option value="">–</option><option${o.dp==="Belum DP"?" selected":""}>Belum DP</option><option${/^sudah/i.test(o.dp||"")?" selected":""}>Sudah DP</option></select></label>
     <label class="pyd" ${/^sudah/i.test(o.dp||"")?"":"hidden"}>Tgl bayar DP<input class="in" type="date" id="pyDpd" value="${esc(o.dpd||"")}"></label>
     <label class="pyd" ${/^sudah/i.test(o.dp||"")?"":"hidden"}>Nominal DP (Rp)<input class="in rp" id="pyDpn" inputmode="numeric" placeholder="0" value="${o.dpn?(+o.dpn).toLocaleString("id-ID"):""}"></label>
     <label>Pelunasan<select class="in" id="pyLs"><option value="">–</option><option${o.ls==="Belum lunas"?" selected":""}>Belum lunas</option><option${/^lunas/i.test(o.ls||"")?" selected":""}>Lunas</option></select></label>
     <label class="pyl" ${/^lunas/i.test(o.ls||"")?"":"hidden"}>Tgl pelunasan<input class="in" type="date" id="pyLsd" value="${esc(o.lsd||"")}"></label>
     <label class="pyl" ${/^lunas/i.test(o.ls||"")?"":"hidden"}>Nominal pelunasan (Rp)<input class="in rp" id="pyLsn" inputmode="numeric" placeholder="0" value="${o.lsn?(+o.lsn).toLocaleString("id-ID"):""}"></label>
-    <div class="pb-total"><small>Total dibayar</small><b id="pyTot">${rpS(paidOf(o))}</b></div>
+    <div class="pb-sum"><div class="pb-total"><small>Sudah dibayar</small><b id="pyTot">${rpS(paidOf(o))}</b></div><div class="pb-total sisa"><small>Sisa pelunasan</small><b id="pySisa">${+o.tb?rpS(sisaOf(o)):"–"}</b></div></div>
     <span class="hint" id="pySt"></span></div>`}
   <div class="ohead"><h3 style="font-size:15px;margin:0">Item dokumen</h3>
     <label class="chain"><input type="checkbox" id="chainOn"${CHAIN?" checked":""}> Tgl submit berikutnya otomatis lanjut dari target item sebelumnya</label></div>
@@ -886,15 +905,19 @@ function openOrder(no){ OPEN_NO=no;
     try{ await run("deleteOrder",no); DB.orders=DB.orders.filter(x=>x.no!==no); delete DB.hist[no]; EXP.delete(no); $("#dlg").close(); toast("Order "+no+" dihapus"); renderOrders(); }
     catch(e){ toast(e.message); b.disabled=false; b.textContent="🗑 Hapus order"; } };
   if($("#pyDp")){ const num=v=>+String(v||"").replace(/[^\d]/g,"")||0;
-    ["#pyDpn","#pyLsn"].forEach(id=>$(id).oninput=e=>{ const n=num(e.target.value); e.target.value=n?n.toLocaleString("id-ID"):""; $("#pyTot").textContent=rpS((/^sudah/i.test($("#pyDp").value)?num($("#pyDpn").value):0)+(/^lunas/i.test($("#pyLs").value)?num($("#pyLsn").value):0)); });
+    const calc=()=>{ const paid=(/^sudah/i.test($("#pyDp").value)?num($("#pyDpn").value):0)+(/^lunas/i.test($("#pyLs").value)?num($("#pyLsn").value):0), tb=num($("#pyTb").value);
+      $("#pyTot").textContent=rpS(paid); $("#pySisa").textContent=tb?rpS(Math.max(0,tb-paid)):"–"; };
+    ["#pyDpn","#pyLsn","#pyTb"].forEach(id=>$(id).oninput=e=>{ const n=num(e.target.value); e.target.value=n?n.toLocaleString("id-ID"):""; calc(); });
     const savePay=async()=>{ const dp=$("#pyDp").value, ls=$("#pyLs").value;
       document.querySelectorAll(".paybar .pyd").forEach(x=>x.hidden=!/^sudah/i.test(dp)); document.querySelectorAll(".paybar .pyl").forEach(x=>x.hidden=!/^lunas/i.test(ls));
       if(/^sudah/i.test(dp)&&!$("#pyDpd").value) $("#pyDpd").value=TODAY; if(/^lunas/i.test(ls)&&!$("#pyLsd").value) $("#pyLsd").value=TODAY;
-      const f={dp,dpd:/^sudah/i.test(dp)?$("#pyDpd").value:"",ls,lsd:/^lunas/i.test(ls)?$("#pyLsd").value:"",dpn:num($("#pyDpn").value),lsn:num($("#pyLsn").value)}; $("#pySt").textContent="Menyimpan…";
-      try{ const r=await run("updateOrder",no,f); Object.assign(o,{dp:r.dp,dpd:r.dpd,ls:r.ls,lsd:r.lsd,dpn:r.dpn,lsn:r.lsn}); $("#pyTot").textContent=rpS(paidOf(o)); if(r.note) (DB.hist[no]=DB.hist[no]||[]).push({d:TODAY,t:nowHM(),no,x:r.note,by:ME.nama}); $("#pySt").textContent="✓ Tersimpan"; setTimeout(()=>{ const e=$("#pySt"); if(e) e.textContent=""; },2500); }
+      if(/^lunas/i.test(ls)&&!num($("#pyLsn").value)&&num($("#pyTb").value)){ const rest=Math.max(0,num($("#pyTb").value)-(/^sudah/i.test(dp)?num($("#pyDpn").value):0)); if(rest) $("#pyLsn").value=rest.toLocaleString("id-ID"); }   // pelunasan otomatis = sisa
+      calc();
+      const f={dp,dpd:/^sudah/i.test(dp)?$("#pyDpd").value:"",ls,lsd:/^lunas/i.test(ls)?$("#pyLsd").value:"",dpn:num($("#pyDpn").value),lsn:num($("#pyLsn").value),tb:num($("#pyTb").value)}; $("#pySt").textContent="Menyimpan…";
+      try{ const r=await run("updateOrder",no,f); Object.assign(o,{dp:r.dp,dpd:r.dpd,ls:r.ls,lsd:r.lsd,dpn:r.dpn,lsn:r.lsn,tb:r.tb}); $("#pyTot").textContent=rpS(paidOf(o)); $("#pySisa").textContent=+o.tb?rpS(sisaOf(o)):"–"; if(r.note) (DB.hist[no]=DB.hist[no]||[]).push({d:TODAY,t:nowHM(),no,x:r.note,by:ME.nama}); $("#pySt").textContent="✓ Tersimpan"; setTimeout(()=>{ const e=$("#pySt"); if(e) e.textContent=""; },2500); }
       catch(e){ $("#pySt").textContent=""; toast(e.message); } };
-    ["#pyDp","#pyDpd","#pyLs","#pyLsd","#pyDpn","#pyLsn"].forEach(id=>$(id).onchange=savePay);
-    ["#pyDpn","#pyLsn"].forEach(id=>$(id).addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); e.target.blur(); } })); }
+    ["#pyDp","#pyDpd","#pyLs","#pyLsd","#pyDpn","#pyLsn","#pyTb"].forEach(id=>$(id).onchange=savePay);
+    ["#pyDpn","#pyLsn","#pyTb"].forEach(id=>$(id).addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); e.target.blur(); } })); }
   if($("#oeBtn")){ $("#oeBtn").onclick=()=>{ $("#oeBox").hidden=!$("#oeBox").hidden; if(!$("#oeBox").hidden) $("#oeC").focus(); }; $("#oeCancel").onclick=()=>{ $("#oeBox").hidden=true; };
     $("#oeSave").onclick=async()=>{ const b=$("#oeSave"); b.disabled=true; b.textContent="Menyimpan…";
       try{ const r=await run("updateOrder",no,{no:$("#oeNo").value.trim(),c:$("#oeC").value.trim(),o:$("#oeO").value.trim(),ok:$("#oeOk").value});
@@ -909,6 +932,16 @@ function openOrder(no){ OPEN_NO=no;
     h.addEventListener("change",e=>{ e.stopPropagation(); if(!h.value) return; t.value=dmyShow(fixYear(h.value)); t.dispatchEvent(new Event("change",{bubbles:true})); }); });
   $("#dB").querySelectorAll('input[data-f="p"]').forEach(inp=>inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); inp.blur(); } }));
   if(!F) initDrag(o,no);
+  $("#dB").querySelectorAll("[data-hp]").forEach(box=>{ const it=o.items[+box.dataset.hp]; const num=v=>+String(v||"").replace(/[^\d]/g,"")||0;
+    const calc=()=>{ const tb=num(box.querySelector('[data-pay="tb"]').value), paid=num(box.querySelector('[data-pay="dpn"]').value)+num(box.querySelector('[data-pay="lsn"]').value); box.querySelector("[data-hsisa]").textContent=tb?rpS(Math.max(0,tb-paid)):"–"; };
+    box.querySelectorAll("input.rp").forEach(inp=>{ inp.addEventListener("input",()=>{ const n=num(inp.value); inp.value=n?n.toLocaleString("id-ID"):""; calc(); }); inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); inp.blur(); } }); });
+    box.querySelectorAll("[data-pay]").forEach(inp=>inp.addEventListener("change",e=>{ e.stopPropagation(); const f=inp.dataset.pay, v=/^(tb|dpn|lsn)$/.test(f)?num(inp.value):inp.value;
+      const fields={[f]:v};
+      if(f==="dpn"&&v&&!it.dpd){ fields.dpd=TODAY; box.querySelector('[data-pay="dpd"]').value=TODAY; }
+      if(f==="lsn"&&v&&!it.lsd){ fields.lsd=TODAY; box.querySelector('[data-pay="lsd"]').value=TODAY; }
+      if(String(it[f]??"")===String(v)&&Object.keys(fields).length===1) return;
+      saveItem(it,fields,""); calc(); })); });
+  $("#dB").querySelectorAll(".hdpay").forEach(x=>x.addEventListener("change",e=>e.stopPropagation()));
   const fitTa=ta=>{ ta.style.height="auto"; ta.style.height=(ta.scrollHeight+2)+"px"; };
   $("#dB").querySelectorAll("textarea.ket").forEach(ta=>{ ta.addEventListener("input",()=>fitTa(ta)); ta.addEventListener("focus",()=>fitTa(ta)); });
   requestAnimationFrame(()=>$("#dB").querySelectorAll("textarea.ket").forEach(fitTa));
@@ -988,7 +1021,7 @@ function reportHtml(R,forEmail){
       const starts=[0]; x.o.items.forEach((i,k)=>{ if(i.j&&i.s) starts.push(k+1); }); const segLen=st0=>{ const ix=starts.indexOf(st0); return (ix+1<starts.length?starts[ix+1]:span)-st0; };
       const fCell=(st0,val)=>`<td rowspan="${segLen(st0)}" style="${bd};text-align:center;font-weight:700;white-space:nowrap">${val}</td>`;
       let h=`<tr><td rowspan="${span}" style="${bd};text-align:center">${n}</td><td rowspan="${span}" style="${bd};text-align:center">${esc(x.o.no)}</td><td rowspan="${span}" style="${bd};text-align:center;font-weight:700">${esc(x.o.c)}</td>${fCell(0,x.o.ok?dmyFull(x.o.ok):"-")}<td colspan="8" style="${bd};background:#ED7D31;text-align:center;font-weight:700">${esc(x.o.o)}</td><td rowspan="${span}" style="${bd};text-align:center;white-space:pre-line;background:${payBg(x.o)};min-width:130px">${esc(payStatusText(x.o))}</td><td rowspan="${span}" style="${bd};text-align:center;white-space:pre-line;min-width:110px">${esc(payDateText(x.o))}</td></tr>`;
-      x.o.items.forEach((i,k)=>{ if(i.j){ h+=`<tr>${i.s?fCell(k+1,dmyFull(i.s)):""}<td colspan="8" style="${bd};background:#ED7D31;text-align:center;font-weight:700">${esc(i.d)}</td></tr>`; return; }
+      x.o.items.forEach((i,k)=>{ if(i.j){ h+=`<tr>${i.s?fCell(k+1,dmyFull(i.s)):""}<td colspan="8" style="${bd};background:#ED7D31;text-align:center;font-weight:700">${esc(i.d)}${hHasPay(i)?`<div style="font-weight:400;font-size:11px;margin-top:2px">${esc(hPayText(i))}</div>`:""}</td></tr>`; return; }
         const late=isLate(i), red=late?";color:#C00000;font-weight:700":"", tg=targetOf(i);
         h+=`<tr><td style="${bd}">${esc(i.d)}</td><td style="${bd};text-align:center">${esc(i.p||"-")}</td><td style="${bd};text-align:center">${esc(i.t||"-")}</td><td style="${bd};text-align:center;white-space:nowrap">${i.h?i.h+" Hari Kerja":"-"}</td><td style="${bd};text-align:center;white-space:nowrap">${i.s?dmyFull(i.s):"-"}</td><td style="${bd};text-align:center;white-space:nowrap${red}">${tg?dmyFull(tg):"-"}</td><td style="${bd};text-align:center;background:${stBg(i.st)}${red}">${esc(i.st)}${late?" (lewat target)":""}</td><td style="${bd};white-space:pre-line">${esc(i.k||"")}</td></tr>`; });
       return h; }).join("");
@@ -1025,7 +1058,7 @@ async function buildXlsx(R){
       put(6,x.o.o,st(ORG)); for(let c=7;c<=13;c++) put(c,"",st(ORG)); merges.push({s:{r,c:6},e:{r,c:13}}); rows[r]={hpt:30}; r++;
       const fStarts=[start];
       x.o.items.forEach(i=>{ for(let c=2;c<=5;c++) put(c,"",st()); put(14,"",st()); put(15,"",st());
-        if(i.j){ if(i.s){ fStarts.push(r); put(5,dmyFull(i.s),st({font:{name:FN,sz:12,bold:true}})); } put(6,i.d,st(ORG)); for(let c=7;c<=13;c++) put(c,"",st(ORG)); merges.push({s:{r,c:6},e:{r,c:13}}); rows[r]={hpt:26}; r++; return; }
+        if(i.j){ if(i.s){ fStarts.push(r); put(5,dmyFull(i.s),st({font:{name:FN,sz:12,bold:true}})); } put(6,i.d+(hHasPay(i)?"\n"+hPayText(i):""),st(ORG)); for(let c=7;c<=13;c++) put(c,"",st(ORG)); merges.push({s:{r,c:6},e:{r,c:13}}); rows[r]={hpt:26}; r++; return; }
         const late=isLate(i), tg=targetOf(i), red=late?{font:{name:FN,sz:12,bold:true,color:{rgb:"C00000"}}}:{};
         put(6,i.d,st({alignment:{horizontal:"left",vertical:"center",wrapText:true}})); put(7,i.p||"-",st()); put(8,i.t||"-",st()); put(9,i.h?i.h+" Hari Kerja":"-",st());
         put(10,i.s?dmyFull(i.s):"-",st()); put(11,tg?dmyFull(tg):"-",st(red)); put(12,i.st+(late?" (lewat target)":""),st(Object.assign({fill:{fgColor:{rgb:stBg(i.st).slice(1)}}},red)));
