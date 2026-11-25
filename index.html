@@ -648,8 +648,9 @@ function segPay(src,isOrder){
 /* jika jenis order kosong, judul sub-proses pertama dipakai sebagai baris order */
 /* jenis order kosong ATAU sama dengan judul sub-proses pertama -> cukup satu baris oranye (tidak dobel) */
 const normJ=t=>String(t||"").toLowerCase().replace(/[^a-z0-9]+/g,"");
-const viewOrder=o=>{ const it=o.items||[], h=it[0]; if(!h||!h.j) return o; const a=normJ(o.o), b=normJ(h.d);
-  if(!a||a===b||(a.length>3&&(b.includes(a)||a.includes(b)))) return Object.assign({},o,{o:h.d,ok:h.s||o.ok,items:it.slice(1),_h0:h}); return o; };
+const viewOrder=o=>{ const it=o.items||[], h=it[0]; if(!h||!h.j) return o; return Object.assign({},o,{o:h.d,ok:h.s||o.ok,items:it.slice(1),_h0:h}); };
+/* judul tampilan order: judul sub-proses pertama; jenis order lama hanya dipakai bila belum ada judul */
+const oTitle=o=>{ const h=(o.items||[]).find(i=>i.j); return h?h.d:(o.o||""); };
 const seg0=O=>O._h0&&hHasPay(O._h0)?segPay(O._h0,false):{st:"-",dt:"-",bg:"#FFFFFF"};
 const paySegs=o=>{ const st=[0]; (o.items||[]).forEach((h,k)=>{ if(h.j&&hHasPay(h)) st.push(k+1); }); return st; };
 const payDateText=o=>[/^sudah/i.test(o.dp||"")&&o.dpd?`DP: ${dmyFull(o.dpd)}`:"",/^lunas/i.test(o.ls||"")&&o.lsd?`Pelunasan: ${dmyFull(o.lsd)}`:""].filter(Boolean).join("\n")||"-";
@@ -802,7 +803,7 @@ async function openReport(){
 function openMeeting(){
   const S=stats(), by={}; [...S.wait,...S.hold].forEach(x=>{ (by[x.o.no]=by[x.o.no]||{o:x.o,list:[]}).list.push(x.i); });
   const L=["BAHAN MEETING COMPANY TEAM",fmtLong(TODAY),"Order yang menunggu persyaratan klien atau hold",""];
-  Object.values(by).sort((a,b)=>b.list.length-a.list.length).forEach((g,k)=>{ L.push(`${k+1}. ${g.o.c} [${g.o.no}] ${g.o.o}`); g.list.forEach(i=>L.push(`   - ${i.d} (${i.st}${i.p?", PIC "+i.p:""})${i.k?": "+i.k:""}`)); L.push(""); });
+  Object.values(by).sort((a,b)=>b.list.length-a.list.length).forEach((g,k)=>{ L.push(`${k+1}. ${g.o.c} [${g.o.no}] ${oTitle(g.o)}`); g.list.forEach(i=>L.push(`   - ${i.d} (${i.st}${i.p?", PIC "+i.p:""})${i.k?": "+i.k:""}`)); L.push(""); });
   $("#dT").textContent="Bahan meeting"; $("#dS").textContent=`${Object.keys(by).length} perusahaan, ${S.wait.length+S.hold.length} item.`;
   $("#dB").innerHTML=`<pre class="rep">${esc(L.join("\n"))}</pre><div style="margin-top:12px"><button class="btn pri" id="cp">Salin teks</button></div>`;
   $("#cp").onclick=()=>copy(L.join("\n")); $("#dlg").showModal();
@@ -1004,7 +1005,7 @@ function renderOrders(){
     <select class="in" id="ost">${[["aktif","Order aktif"],["late","Ada yang lewat target"],["menunggu","Menunggu persyaratan"],["nopic","Ada item tanpa PIC"],["selesai","Selesai semua"],["semua","Semua order"]].map(([k,l])=>`<option value="${k}"${OF.st===k?" selected":""}>${l}</option>`).join("")}</select>
     <select class="in" id="opic"><option value="">Semua PIC</option>${pics.map(p=>`<option${OF.pic===p?" selected":""}>${esc(p)}</option>`).join("")}</select></div>
   <div class="olist">${(()=>{ RANK=new Map(newestFirst(DB.orders).map((o,i)=>[o.no,i+1])); return ""; })()}${list.map((o,idx)=>{ const its=realItems(o), n=its.length, d=its.filter(i=>DONE(i.st)).length, late=its.filter(isLate).length, w=its.filter(i=>/Menunggu/.test(i.st)).length, on=its.filter(i=>i.st==="On proses").length, hold=its.filter(i=>i.st==="Hold").length, subs=o.items.filter(i=>i.j).length, act=its.filter(itemFilter()).length, open=EXP.has(o.no);
-    return `<div class="order${open?" open":""}"><span class="o-num">${RANK.get(o.no)||idx+1}</span><div class="o-main" data-no="${esc(o.no)}" role="button" tabindex="0"><span class="no">${esc(o.no)}${o.ok?`. OK proses ${fmt(o.ok)}`:""}${lastOk(o)&&lastOk(o)!==(o.ok||"")?` · <b class="lanjut">lanjutan ${fmt(lastOk(o))}</b>`:""}</span><h3>${esc(o.c)}</h3><p>${esc(o.o)}${subs?` <span class="subs">${subs} sub-proses</span>`:""}</p></div>
+    return `<div class="order${open?" open":""}"><span class="o-num">${RANK.get(o.no)||idx+1}</span><div class="o-main" data-no="${esc(o.no)}" role="button" tabindex="0"><span class="no">${esc(o.no)}${o.ok?`. OK proses ${fmt(o.ok)}`:""}${lastOk(o)&&lastOk(o)!==(o.ok||"")?` · <b class="lanjut">lanjutan ${fmt(lastOk(o))}</b>`:""}</span><h3>${esc(o.c)}</h3><p>${esc(oTitle(o))}${subs?` <span class="subs">${subs} sub-proses</span>`:""}</p></div>
       <div class="o-side"><div class="prog"><span>${d}/${n} selesai</span><span class="bar"><i style="width:${n?d/n*100:0}%"></i></span></div><div class="o-pills">${payBadge(o)}${late?`<span class="pill s-late">${late} lewat target</span>`:""}${w?`<span class="pill s-menunggu">${w} menunggu</span>`:""}${on?`<span class="pill s-on">${on} on proses</span>`:""}${hold?`<span class="pill s-hold">${hold} hold</span>`:""}</div>
       ${act?`<button class="o-exp" data-exp="${esc(o.no)}" aria-expanded="${open}">${open?"Tutup":"Lihat "+act+" item "+filterLabel()} <span class="chev">▾</span></button>`:""}</div>
       ${open?`<div class="o-items">${expandHtml(o)}</div>`:""}</div>`; }).join("")||'<p class="hint">Tidak ada order.</p>'}</div>`;
@@ -1049,7 +1050,7 @@ function chainFrom(o,k){
 }
 function openOrder(no){ OPEN_NO=no;
   const o=DB.orders.find(x=>x.no===no), pics=PICS(), F=isField();
-  $("#dT").textContent=o.c; $("#dS").textContent=`No. order ${o.no}${o.o?". "+o.o:""}${o.ok?". OK proses "+fmt(o.ok):""}`;
+  $("#dT").textContent=o.c; $("#dS").textContent=`No. order ${o.no}${oTitle(o)?". "+oTitle(o):""}${o.ok?". OK proses "+fmt(o.ok):""}`;
   const h=(DB.hist[no]||[]).slice().sort((a,b)=>(b.d+" "+(b.t||"")).localeCompare(a.d+" "+(a.t||"")));
   const can=i=>!F||i.p===ME.nama;
   const row=(i,k)=>{ if(i.j) return `<tr class="hd" data-k="${k}"><td colspan="8"><div class="hdw">${F?"":'<span class="drag" title="Seret untuk memindahkan" aria-label="Pindahkan">⋮⋮</span>'}<span class="hd-ic">▸</span><input class="in hd-in" data-f="d" value="${esc(i.d)}"${F?" disabled":""}><span class="hd-date" title="Tanggal OK proses lanjutan"><small>Tgl OK</small><span class="dwrap"><input class="in dt" data-f="s" value="${dmyShow(i.s)}" placeholder="ddmmyy" maxlength="20" autocomplete="off"${F?" disabled":""}><button type="button" class="dpick" data-pick title="Pilih dari kalender"${F?" disabled":""}>▾</button><input type="date" class="dhid" tabindex="-1" aria-hidden="true" value="${esc(i.s||"")}"></span></span></div>
