@@ -220,6 +220,18 @@ body.is-dragging,body.is-dragging *{cursor:grabbing!important;user-select:none}
 .langbtn.lg{display:block;margin:14px auto 0}
 html[lang="ko"] body{word-break:keep-all}
 .verwarn{position:sticky;top:0;z-index:80;background:#FDECEC;color:#8B1E1E;border-bottom:1px solid #F3B5B5;padding:10px 16px;font-size:13px;text-align:center}
+.act-row{display:grid;grid-template-columns:1fr 260px 130px auto;gap:8px;align-items:start}.act-row textarea{resize:vertical;min-height:44px}
+@media(max-width:820px){.act-row{grid-template-columns:1fr}}
+.act-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.act-h .chips{margin:0}
+.act-tl{list-style:none;margin:12px 0 0;padding:0}.act-tl li{display:grid;grid-template-columns:64px 1fr auto;gap:10px;padding:10px 0;border-top:1px solid var(--line);align-items:start}
+.act-tl time{font-weight:800;color:var(--pri);font-variant-numeric:tabular-nums;background:var(--pri-soft);border-radius:8px;padding:4px 8px;text-align:center}
+.act-tl small{display:block;color:var(--muted);margin-top:2px}.act-tl .pill{margin-left:4px}.act-btn{display:flex;gap:4px}
+details.mine-items summary{cursor:pointer;list-style:none}details.mine-items summary::-webkit-details-marker{display:none}details.mine-items summary::before{content:"▸ ";color:var(--pri)}details.mine-items[open] summary::before{content:"▾ "}
+.card.team .tm-tools{display:flex;justify-content:flex-end;margin:10px 0 6px}
+.tm{border-top:1px solid var(--line)}.tm-h{width:100%;display:flex;align-items:center;gap:12px;padding:12px 4px;background:none;border:0;cursor:pointer;text-align:left;font:inherit;color:inherit;border-radius:10px}
+.tm-h:hover{background:var(--soft)}.tm-av{width:34px;height:34px;border-radius:50%;background:var(--pri);color:#fff;display:grid;place-items:center;font-weight:800;flex:none}
+.tm-nm{flex:1;display:flex;flex-direction:column;min-width:0}.tm-nm small{color:var(--muted)}.tm-chev{color:var(--muted);transition:transform .2s}.tm.open .tm-chev{transform:rotate(180deg)}
+.tm-b{padding:0 4px 12px 50px}.tm-b .act-tl{margin-top:0}
 [hidden]{display:none!important}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
 .top-in{max-width:1180px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -414,10 +426,10 @@ table.t{border-collapse:collapse;width:100%;font-size:13px;min-width:1180px}
 const LANG=(()=>{ try{ return localStorage.getItem("ct-lang")||"id"; }catch(e){ return "id"; } })();
 const KO={
 "Company Team":"Company Team","Order & Laporan Harian":"주문 및 일일 보고","Masuk dengan nama dan PIN Anda.":"이름과 PIN으로 로그인하세요.","Masuk sebagai":"사용자","Masuk":"로그인","PIN":"PIN","Memuat":"불러오는 중","Memuat…":"불러오는 중…",
-"Dashboard":"대시보드","Order":"주문","Quotation":"견적","Laporan saya":"내 보고","Akun":"계정","Keluar":"로그아웃","Pengaturan":"설정",
+"Dashboard":"대시보드","Order":"주문","Quotation":"견적","Laporan saya":"내 보고","Aktivitas harian":"일일 활동","Aktivitas tim":"팀 활동","Klik nama untuk melihat tugas dan aktivitas harian setiap orang, lengkap dengan jamnya.":"이름을 클릭하면 각자의 업무와 일일 활동을 시간과 함께 볼 수 있습니다.","Buka semua":"모두 열기","Tutup semua":"모두 닫기","Belum ada aktivitas":"활동 없음","Tidak ada aktivitas":"활동 없음","Belum dikirim":"미발송","Belum ada aktivitas tercatat.":"기록된 활동이 없습니다.","Tulis aktivitas":"활동 입력","Timeline aktivitas":"활동 타임라인","Hari ini":"오늘","+ Simpan":"+ 저장","Order terkait (opsional)":"관련 주문 (선택)","Proses":"진행","Pending":"보류","Update status item order":"주문 항목 상태 업데이트","Belum ada aktivitas hari ini.":"오늘 활동이 없습니다.","Tidak ada aktivitas pada tanggal ini.":"이 날짜에 활동이 없습니다.","Ketik pekerjaan yang dilakukan lalu tekan Enter. Bisa tempel beberapa baris sekaligus.":"수행한 업무를 입력하고 Enter를 누르세요. 여러 줄을 한 번에 붙여넣을 수 있습니다.","Contoh: Antar dokumen RUPS ke notaris":"예: 공증인에게 RUPS 서류 전달","Ubah":"수정","Akun":"계정","Keluar":"로그아웃","Pengaturan":"설정",
 "Dashboard Company Team":"Company Team 대시보드","Laporan ke Manager":"매니저에게 보고","Kirim laporan ke Manager":"매니저에게 보고 발송","Muat ulang":"새로고침","↻ Muat ulang":"↻ 새로고침",
 "order aktif":"진행 중 주문","item dokumen berjalan":"진행 중 서류 항목","menunggu persyaratan klien":"고객 서류 대기","lewat target":"기한 초과","item belum ada PIC":"담당자 미지정 항목","update hari ini":"오늘 업데이트",
-"Beban kerja per PIC":"담당자별 업무량","Item yang belum selesai, menurut status.":"상태별 미완료 항목.","Laporan tim hari ini":"오늘 팀 보고","Update Admin dan Field Team dari menu Laporan saya.":"관리자 및 현장팀이 '내 보고' 메뉴에서 업데이트합니다.",
+"Beban kerja per PIC":"담당자별 업무량","Item yang belum selesai, menurut status.":"상태별 미완료 항목.","Laporan tim hari ini":"오늘 팀 보고","Aktivitas harian Admin dan Field Team.":"관리자 및 현장팀이 '내 보고' 메뉴에서 업데이트합니다.",
 "Belum ada laporan":"보고 없음","Belum dikirim ke Manager. Laporan juga terkirim otomatis setiap sore.":"아직 매니저에게 발송되지 않았습니다. 보고서는 매일 오후 자동 발송됩니다.",
 "Ada item tanpa PIC":"담당자 없는 항목 있음","Ada yang lewat target":"기한 초과 항목 있음",
 "Item saya":"내 항목","Progres hari ini":"오늘 진행","Pilih status baru dan tulis progres, lalu simpan.":"새 상태를 선택하고 진행 내용을 작성한 후 저장하세요.","Simpan update":"업데이트 저장","Tulis lalu tekan Enter":"입력 후 Enter",
@@ -466,7 +478,7 @@ const KO_RULES=[
  [/^(.+)\. OK proses (.+)$/,(m,a,b)=>`${tKO(a)}. 진행 승인 ${koDate(b)}`],
  [/^No\. order (.+)$/,(m,a)=>`주문 번호 ${koDate(a.replace(/OK proses/g,"진행 승인"))}`],
  [/^Selamat (pagi|siang|sore|malam)(?:, (.+))?$/,(m,a,n)=>({pagi:"좋은 아침입니다",siang:"안녕하세요",sore:"좋은 오후입니다",malam:"좋은 저녁입니다"}[a])+(n?", "+n+"님":"")],
- [/^Laporan harian (.+)$/,(m,a)=>`${a} 일일 보고`],[/^Lama: (\d+) hari kerja$/,(m,a)=>`소요: 영업일 ${a}일`],[/^Tempat: (.*)$/,(m,a)=>`처리 장소: ${a}`],
+ [/^Laporan harian (.+)$/,(m,a)=>`${a} 일일 보고`],[/^Aktivitas harian (.+)$/,(m,a)=>`${a} 일일 활동`],[/^(\d+) aktivitas · (\d+) update item(?: · terakhir (.+))?$/,(m,a,b,c)=>`활동 ${a}건 · 항목 업데이트 ${b}건${c?` · 최근 ${c}`:""}`],[/^Terkirim (.+)$/,(m,a)=>`발송됨 ${a}`],[/^(\d+) catatan$/,(m,a)=>`기록 ${a}건`],[/^Update item: (.+)$/,(m,a)=>`항목 업데이트: ${a}`],[/^(.+)\. Jam dicatat otomatis saat aktivitas disimpan\.$/,(m,a)=>`${koDate(a)}. 저장 시 시간이 자동 기록됩니다.`],[/^(\d+) aktivitas(?:, (\d+) update item)? hari ini$/,(m,a,b)=>`오늘 활동 ${a}건${b?`, 항목 업데이트 ${b}건`:""}`],[/^Lama: (\d+) hari kerja$/,(m,a)=>`소요: 영업일 ${a}일`],[/^Tempat: (.*)$/,(m,a)=>`처리 장소: ${a}`],
  [/^Submit: (.+)$/,(m,a)=>`제출: ${koDate(a)}`],[/^Target: (.+)$/,(m,a)=>`목표: ${koDate(a)}`],[/^Keterangan: ([\s\S]+)$/,(m,a)=>`비고: ${a}`],
  [/^(Aktif|Menunggu|On proses|Selesai|Lewat target) \((\d+)\)$/,(m,a,b)=>`${KO_ST[a]} (${b})`],[/^(Belum proses|Menunggu|On proses|Hold): (\d+)$/,(m,a,b)=>`${KO_ST[a]}: ${b}`],
  [/^History cancel \((\d+)\)$/,(m,a)=>`취소 이력 (${a})`],[/^📜 Log riwayat \((\d+)\)$/,(m,a)=>`📜 변경 이력 (${a})`],
@@ -652,7 +664,7 @@ async function enter(){
   show(ME.role==="Manager"?"dash":"mine");
 }
 const isBoss=()=>ME.role==="Manager", isAdmin=()=>ME.role==="Admin", isField=()=>ME.role==="Field";
-const TABS=()=>isBoss()?[["dash","Dashboard"],["orders","Order"],["quot","Quotation"]]:isAdmin()?[["mine","Laporan saya"],["orders","Order"],["quot","Quotation"],["dash","Dashboard"]]:[["mine","Laporan saya"],["orders","Order"]];
+const TABS=()=>isBoss()?[["dash","Dashboard"],["orders","Order"],["quot","Quotation"]]:isAdmin()?[["mine","Aktivitas harian"],["orders","Order"],["quot","Quotation"],["dash","Dashboard"]]:[["mine","Aktivitas harian"],["orders","Order"]];
 let TABKEY="";
 function tabs(){ const t=TABS(), key=t.map(x=>x[0]).join();
   if(key!==TABKEY){ TABKEY=key; $("#tabs").innerHTML='<span class="tab-ind" id="tabInd" aria-hidden="true"></span>'+t.map(([v,l])=>`<button class="tab" data-v="${v}">${l}</button>`).join(""); }
@@ -718,6 +730,7 @@ function stats(){
   return {items,act,orders:DB.orders.filter(o=>o.items.some(i=>!DONE(i.st))).length,
     wait:act.filter(x=>/Menunggu/.test(x.i.st)), late:act.filter(x=>isLate(x.i)), hold:act.filter(x=>x.i.st==="Hold"), nopic:act.filter(x=>!x.i.p)};
 }
+let DASH_DAY=null; const DOPEN=new Set();
 function renderDash(){
   const S=stats(), pics=PICS(), td=today();
   const max=Math.max(1,...pics.map(p=>S.act.filter(x=>x.i.p===p).length),S.nopic.length);
@@ -725,8 +738,18 @@ function renderDash(){
   const wl=pics.map(p=>{ const a=S.act.filter(x=>x.i.p===p); return `<div class="wl-row"><span class="nm">${esc(p)}</span><div class="stack" style="width:${Math.max(a.length/max*100,2)}%">${bar(a)}</div><span class="n">${a.length}</span></div>`; }).join("");
   const places={}; S.act.forEach(x=>{ const k=x.i.t||"(belum diisi)"; places[k]=(places[k]||0)+1; });
   const pl=Object.entries(places).sort((a,b)=>b[1]-a[1]).slice(0,7), pmax=pl[0]?pl[0][1]:1;
-  const team=pics.map(p=>{ const u=td.filter(x=>x.by===p), sent=DB.sent[p];
-    return `<div class="r"><div><b>${esc(p)}</b><small>${u.filter(x=>x.type==="Item").length} update item${u.some(x=>x.type==="Lainnya")?`, ${u.filter(x=>x.type==="Lainnya").length} aktivitas lain`:""}</small></div><div style="display:flex;gap:8px;align-items:center">${sent?`<span class="pill s-selesai">Terkirim ${esc(sent)}</span>`:u.length?'<span class="pill s-menunggu">Belum dikirim</span>':'<span class="pill s-belum">Belum ada laporan</span>'}${u.length?`<button class="btn sm" data-pic="${esc(p)}">Lihat</button>`:""}</div></div>`; }).join("");
+  /* aktivitas tim per hari: klik nama untuk melihat timeline tugas */
+  const DD=DASH_DAY||TODAY, isTd=DD===TODAY, dayU=(DB.updates||[]).filter(x=>x.date===DD);
+  const days=[...Array(7)].map((_,k)=>{ const d=new Date(TODAY+"T00:00:00"); d.setDate(d.getDate()-k); return iso(d); });
+  const aSt=st=>/selesai/i.test(st||"")?"s-selesai":/proses/i.test(st||"")?"s-on":/pending|menunggu|tunda/i.test(st||"")?"s-menunggu":/hold/i.test(st||"")?"s-hold":"s-belum";
+  const tline=u=>`<ul class="act-tl">${u.slice().sort((a,b)=>String(b.time).localeCompare(String(a.time))).map(x=>x.type==="Item"
+      ?`<li><time>${esc(x.time)}</time><div><b>Update item: ${esc(x.item)}</b> <span class="pill ${aSt(x.to)}">${esc(x.to)}</span><small>[${esc(x.no)}] ${esc(x.c||"")}${x.from&&x.from!==x.to?` · dari ${esc(x.from)}`:""}${x.note?` · ${esc(x.note)}`:""}</small></div><span></span></li>`
+      :`<li><time>${esc(x.time)}</time><div>${esc(x.note)} ${x.to?`<span class="pill ${aSt(x.to)}">${esc(x.to)}</span>`:""}${x.no?`<small>[${esc(x.no)}] ${esc(x.c||"")}</small>`:""}</div><span></span></li>`).join("")}</ul>`;
+  const team=pics.map(p=>{ const u=dayU.filter(x=>x.by===p), na=u.filter(x=>x.type!=="Item").length, ni=u.filter(x=>x.type==="Item").length, sent=isTd?DB.sent[p]:null, open=DOPEN.has(p);
+    const last=u.length?u.map(x=>x.time).sort().slice(-1)[0]:"";
+    const badge=isTd?(sent?`<span class="pill s-selesai">Terkirim ${esc(sent)}</span>`:u.length?'<span class="pill s-menunggu">Belum dikirim</span>':'<span class="pill s-belum">Belum ada aktivitas</span>'):(u.length?`<span class="pill s-on">${u.length} catatan</span>`:'<span class="pill s-belum">Tidak ada aktivitas</span>');
+    return `<div class="tm${open?" open":""}"><button class="tm-h" data-tm="${esc(p)}" aria-expanded="${open}"><span class="tm-av">${esc((p||"?").slice(0,1))}</span><span class="tm-nm"><b>${esc(p)}</b><small>${na} aktivitas · ${ni} update item${last?` · terakhir ${esc(last)}`:""}</small></span>${badge}<span class="tm-chev">▾</span></button>
+      ${open?`<div class="tm-b">${u.length?tline(u):'<p class="hint" style="margin:8px 0">Belum ada aktivitas tercatat.</p>'}</div>`:""}</div>`; }).join("");
   $("#v-dash").innerHTML=`
   <div class="head"><div><h1>Dashboard Company Team</h1><p>${fmtLong(TODAY)}. Data langsung dari Google Sheets.</p></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="btnRef">Muat ulang</button><button class="btn" id="btnCollect">📊 Collect data report</button><button class="btn pri" id="btnRep">Laporan ke Manager</button></div></div>
@@ -737,14 +760,16 @@ function renderDash(){
     <button class="kpi ${S.late.length?"alert":""}" data-go="late"><b>${S.late.length}</b><span>lewat target</span></button>
     <button class="kpi ${S.nopic.length?"alert":""}" data-go="nopic"><b>${S.nopic.length}</b><span>item belum ada PIC</span></button>
     <button class="kpi" id="kpiUpd"><b>${td.filter(x=>x.type==="Item").length}</b><span>update hari ini</span></button></div>
-  <div class="grid2">
-    <div class="card"><h2>Beban kerja per PIC</h2><p class="hint">Item yang belum selesai, menurut status.</p><div class="wl">${wl}</div>
-      <div class="legend"><span style="--c:var(--grey)">Belum proses</span><span style="--c:var(--warn)">Menunggu</span><span style="--c:var(--pri)">On proses</span><span style="--c:var(--hold)">Hold</span></div></div>
-    <div class="card"><h2>Laporan tim hari ini</h2><p class="hint">Update Admin dan Field Team dari menu Laporan saya.</p><div class="rows">${team}</div></div></div>`;
+  <div class="card team"><div class="act-h"><div><h2 style="margin:0">Aktivitas tim</h2><p class="hint" style="margin:2px 0 0">Klik nama untuk melihat tugas dan aktivitas harian setiap orang, lengkap dengan jamnya.</p></div>
+      <div class="chips">${days.map(d=>{ const n=(DB.updates||[]).filter(x=>x.date===d).length; return `<button class="chip" data-dday="${d}" aria-pressed="${d===DD}">${d===TODAY?"Hari ini":fmt(d)}${n?` (${n})`:""}</button>`; }).join("")}</div></div>
+    <div class="tm-tools"><button class="btn sm" id="tmAll">${DOPEN.size?"Tutup semua":"Buka semua"}</button></div>
+    <div class="tm-list">${team}</div></div>`;
   $("#btnRep").onclick=openReport; $("#btnCollect").onclick=openCollect; $("#btnRef").onclick=async()=>{ await reload(true); rerender(); toast("Data terbaru dimuat"); };
   $("#v-dash").querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{ OF.st=b.dataset.go; OF.q=""; OF.pic=""; EXP.clear(); if(b.dataset.go!=="aktif") AUTO_EXP=true; show("orders"); });
   $("#kpiUpd").onclick=openTodayUpdates;
-  $("#v-dash").querySelectorAll("[data-pic]").forEach(b=>b.onclick=()=>openPicReport(b.dataset.pic));
+  $("#v-dash").querySelectorAll("[data-tm]").forEach(b=>b.onclick=()=>{ const p=b.dataset.tm; DOPEN.has(p)?DOPEN.delete(p):DOPEN.add(p); renderDash(); });
+  $("#v-dash").querySelectorAll("[data-dday]").forEach(b=>b.onclick=()=>{ DASH_DAY=b.dataset.dday; renderDash(); });
+  $("#tmAll").onclick=()=>{ if(DOPEN.size) DOPEN.clear(); else pics.forEach(p=>DOPEN.add(p)); renderDash(); };
 }
 async function openReport(){
   $("#dT").textContent="Laporan harian ke Manager"; $("#dS").textContent="Disusun otomatis dari update hari ini. Terkirim otomatis ke email Manager setiap hari kerja.";
@@ -844,15 +869,29 @@ function refreshOpen(){ if($("#dlg").open&&OPEN_NO&&DB.orders.some(o=>o.no===OPE
 
 /* ---------- laporan saya ---------- */
 let MF="aktif";
-function renderMine(){
+let MDAY=null, MITEMS_OPEN=false;
+function v_open(){ const d=document.querySelector("#v-mine .mine-items"); if(d) d.open=true; }
+function renderMine(){ if(!MDAY) MDAY=TODAY;
   const mine=allItems().filter(x=>x.i.p===ME.nama), td=today().filter(u=>u.by===ME.nama);
   const f={aktif:x=>!DONE(x.i.st),late:x=>isLate(x.i),menunggu:x=>/Menunggu/.test(x.i.st),on:x=>x.i.st==="On proses",selesai:x=>x.i.st==="Selesai"};
   const list=mine.filter(f[MF]).sort((a,b)=>(isLate(b.i)-isLate(a.i))||((targetOf(a.i)||"9")<(targetOf(b.i)||"9")?-1:1));
   const done=new Set(td.map(u=>u.itemId)), ex=td.filter(u=>u.type==="Lainnya"), sent=DB.sent[ME.nama], cnt=k=>mine.filter(f[k]).length, ni=td.filter(u=>u.type==="Item").length;
+  const isToday=MDAY===TODAY, dayList=[...Array(7)].map((_,k)=>{ const d=new Date(TODAY+"T00:00:00"); d.setDate(d.getDate()-k); return iso(d); });
+  const mineAll=(DB.updates||[]).filter(u=>u.by===ME.nama), dayU=mineAll.filter(u=>u.date===MDAY).sort((a,b)=>String(b.time).localeCompare(String(a.time)));
+  const ordOpts=newestFirst(DB.orders).map(o=>`<option value="${esc(o.no)}">${esc(o.no)} · ${esc(o.c)}</option>`).join("");
+  const actSt=st=>/selesai/i.test(st||"")?"s-selesai":/proses/i.test(st||"")?"s-on":/pending|menunggu|tunda/i.test(st||"")?"s-menunggu":"s-belum";
   $("#v-mine").innerHTML=`
-  <div class="head"><div><h1>Laporan harian ${esc(ME.nama)}</h1><p>${fmtLong(TODAY)}. Setiap update tersimpan langsung ke Google Sheets.</p></div></div>
-  <div class="card sent"><div><b>${ni} item diupdate${ex.length?`, ${ex.length} aktivitas lain`:""}</b><div class="hint" style="margin:0">${sent?`Terkirim ke Manager pukul ${esc(sent)}.`:"Belum dikirim ke Manager."} Laporan juga terkirim otomatis setiap sore.</div></div><button class="btn pri" id="sendBtn"${td.length?"":" disabled"}>${sent?"Kirim ulang":"Kirim laporan ke Manager"}</button></div>
-  <div class="card"><h2>Item saya</h2><p class="hint">Pilih status baru dan tulis progres, lalu simpan.</p>
+  <div class="head"><div><h1>Aktivitas harian ${esc(ME.nama)}</h1><p>${fmtLong(MDAY)}. Jam dicatat otomatis saat aktivitas disimpan.</p></div></div>
+  <div class="card act-in"${isToday?"":" hidden"}><h2>Tulis aktivitas</h2><p class="hint">Ketik pekerjaan yang dilakukan lalu tekan Enter. Bisa tempel beberapa baris sekaligus.</p>
+    <div class="act-row"><textarea class="in" id="acIn" rows="2" placeholder="Contoh: Antar dokumen RUPS ke notaris"></textarea>
+      <select class="in" id="acOrd"><option value="">Order terkait (opsional)</option>${ordOpts}</select>
+      <select class="in" id="acSt"><option>Selesai</option><option>Proses</option><option>Pending</option></select>
+      <button class="btn pri" id="acAdd">+ Simpan</button></div></div>
+  <div class="card"><div class="act-h"><h2>Timeline aktivitas</h2><div class="chips">${dayList.map(d=>{ const n=mineAll.filter(u=>u.date===d).length; return `<button class="chip" data-day="${d}" aria-pressed="${d===MDAY}">${d===TODAY?"Hari ini":fmt(d)}${n?` (${n})`:""}</button>`; }).join("")}</div></div>
+    ${dayU.length?`<ul class="act-tl">${dayU.map(u=>u.type==="Item"?`<li><time>${esc(u.time)}</time><div><b>Update item: ${esc(u.item)}</b> <span class="pill ${actSt(u.to)}">${esc(u.to)}</span><small>[${esc(u.no)}] ${esc(u.c||"")}${u.from&&u.from!==u.to?` · dari ${esc(u.from)}`:""}${u.note?` · ${esc(u.note)}`:""}</small></div></li>`
+      :`<li data-acid="${esc(u.id)}"><time>${esc(u.time)}</time><div><span class="act-tx">${esc(u.note)}</span> ${u.to?`<span class="pill ${actSt(u.to)}">${esc(u.to)}</span>`:""}${u.no?`<small>[${esc(u.no)}] ${esc(u.c||"")}</small>`:""}</div>${isToday?`<span class="act-btn"><button class="mini" data-acedit="${esc(u.id)}" title="Ubah">✎</button><button class="mini del" data-acdel="${esc(u.id)}" title="Hapus">🗑</button></span>`:""}</li>`).join("")}</ul>`:`<p class="hint">${isToday?"Belum ada aktivitas hari ini.":"Tidak ada aktivitas pada tanggal ini."}</p>`}</div>
+  <div class="card sent"${MDAY===TODAY?"":" hidden"}><div><b>${ex.length} aktivitas${ni?`, ${ni} update item`:""} hari ini</b><div class="hint" style="margin:0">${sent?`Terkirim ke Manager pukul ${esc(sent)}.`:"Belum dikirim ke Manager."} Laporan juga terkirim otomatis setiap sore.</div></div><button class="btn pri" id="sendBtn"${td.length?"":" disabled"}>${sent?"Kirim ulang":"Kirim laporan ke Manager"}</button></div>
+  <details class="card mine-items"${isToday?"":" hidden"}><summary><h2 style="display:inline">Update status item order</h2> <span class="hint">(${cnt("aktif")} item aktif · opsional)</span></summary><p class="hint">Pilih status baru dan tulis progres, lalu simpan. Update ini otomatis masuk ke timeline.</p>
     <div class="chips">${[["aktif","Aktif"],["late","Lewat target"],["menunggu","Menunggu"],["on","On proses"],["selesai","Selesai"]].map(([k,l])=>`<button class="chip" data-f="${k}" aria-pressed="${MF===k}">${l} (${cnt(k)})</button>`).join("")}</div>
     ${!mine.length?'<p class="hint">Belum ada item yang ditugaskan ke Anda. Admin Company dapat menugaskan dari menu Order.</p>':""}
     ${list.slice(0,60).map(({o,i})=>`<div class="it" data-st="${esc(i.st)}" data-id="${esc(i.id)}">
@@ -860,18 +899,24 @@ function renderMine(){
       <div class="meta"><span>Tempat: ${esc(i.t||"–")}</span><span>Lama: ${i.h?i.h+" hari kerja":"–"}</span><span>Submit: ${fmt(i.s)}</span><span>Target: ${fmt(targetOf(i))}</span>${done.has(i.id)?'<span class="done-chip">Diupdate hari ini</span>':""}</div>
       ${i.k?`<div class="hint" style="margin:0">Keterangan: ${esc(i.k)}</div>`:""}
       <div class="upd"><select class="in" data-new>${STATUS.map(s=>`<option${s===i.st?" selected":""}>${esc(s)}</option>`).join("")}</select><input class="in" data-note placeholder="Progres hari ini"><button class="btn pri sm" data-save>Simpan update</button></div></div>`).join("")||(mine.length?'<p class="hint">Tidak ada item untuk filter ini.</p>':"")}
-    ${list.length>60?`<p class="hint">Menampilkan 60 dari ${list.length} item.</p>`:""}</div>
-  <div class="card"><h2>Aktivitas lain hari ini</h2><p class="hint">Meeting, kunjungan instansi, antar dokumen, dan lainnya.</p>
-    <div style="display:flex;gap:8px"><input class="in" id="exIn" placeholder="Tulis lalu tekan Enter"><button class="btn" id="exAdd">Tambah</button></div>
-    <ul style="margin:10px 0 0;padding-left:18px">${ex.map(x=>`<li>${esc(x.note)} <button class="btn sm" data-exdel="${esc(x.id)}" style="margin-left:6px">Hapus</button></li>`).join("")}</ul></div>`;
+    ${list.length>60?`<p class="hint">Menampilkan 60 dari ${list.length} item.</p>`:""}</details>`;
+  if(MITEMS_OPEN) v_open();
   const v=$("#v-mine");
   v.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{ MF=b.dataset.f; renderMine(); });
   v.querySelectorAll("[data-save]").forEach(b=>b.onclick=async()=>{ const card=b.closest(".it"), x=allItems().find(y=>y.i.id===card.dataset.id), to=card.querySelector("[data-new]").value, note=card.querySelector("[data-note]").value.trim();
     if(to===x.i.st&&!note){ toast("Ubah status atau tulis progres dulu"); return; }
     saveItem(x.i,to!==x.i.st?{st:to}:{},note); toast("Update dicatat"); renderMine(); });
-  const addEx=async()=>{ const t=$("#exIn").value.trim(); if(!t) return; try{ DB.updates.push(await run("addExtra",t)); renderMine(); }catch(e){ toast(e.message); } };
-  $("#exAdd").onclick=addEx; $("#exIn").onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); addEx(); } };
-  v.querySelectorAll("[data-exdel]").forEach(b=>b.onclick=async()=>{ try{ await run("delExtra",b.dataset.exdel); DB.updates=DB.updates.filter(u=>u.id!==b.dataset.exdel); renderMine(); }catch(e){ toast(e.message); } });
+  v.querySelector(".mine-items").addEventListener("toggle",e=>{ MITEMS_OPEN=e.target.open; });
+  v.querySelectorAll("[data-day]").forEach(b=>b.onclick=()=>{ MDAY=b.dataset.day; renderMine(); });
+  const addAct=async()=>{ const lines=$("#acIn").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean); if(!lines.length){ toast("Tulis aktivitas dulu"); return; }
+    const no=$("#acOrd").value, st=$("#acSt").value, b=$("#acAdd"); b.disabled=true;
+    try{ for(const note of lines){ const u=await run("addExtra",{note,no,st}); DB.updates.push(u); if(no){ (DB.hist[no]=DB.hist[no]||[]).push({d:u.date,t:u.time,no,x:"Aktivitas: "+note+" ("+st+")",by:ME.nama}); } }
+      toast(lines.length>1?lines.length+" aktivitas tersimpan":"Aktivitas tersimpan pukul "+nowHM()); renderMine(); setTimeout(()=>{ const i=$("#acIn"); if(i) i.focus(); },50); }
+    catch(e){ toast(e.message); b.disabled=false; } };
+  if($("#acAdd")){ $("#acAdd").onclick=addAct; $("#acIn").onkeydown=e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); addAct(); } }; }
+  v.querySelectorAll("[data-acdel]").forEach(b=>b.onclick=async()=>{ if(!confirm("Hapus aktivitas ini?")) return; try{ await run("delExtra",b.dataset.acdel); DB.updates=DB.updates.filter(u=>u.id!==b.dataset.acdel); renderMine(); }catch(e){ toast(e.message); } });
+  v.querySelectorAll("[data-acedit]").forEach(b=>b.onclick=async()=>{ const u=DB.updates.find(x=>x.id===b.dataset.acedit); if(!u) return; const n=prompt("Ubah aktivitas:",u.note); if(n==null||!n.trim()||n.trim()===u.note) return;
+    try{ await run("editExtra",u.id,{note:n.trim()}); u.note=n.trim(); renderMine(); toast("Aktivitas diubah"); }catch(e){ toast(e.message); } });
   $("#sendBtn").onclick=async()=>{ try{ DB.sent[ME.nama]=await run("sendReport"); toast("Laporan terkirim ke Manager"); renderMine(); }catch(e){ toast(e.message); } };
 }
 
