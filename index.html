@@ -646,7 +646,10 @@ function segPay(src,isOrder){
   return {st:L.join("\n")||"-",dt:D.join("\n")||"-",bg};
 }
 /* jika jenis order kosong, judul sub-proses pertama dipakai sebagai baris order */
-const viewOrder=o=>{ const it=o.items||[]; if(!String(o.o||"").trim()&&it[0]&&it[0].j) return Object.assign({},o,{o:it[0].d,ok:it[0].s||o.ok,items:it.slice(1),_h0:it[0]}); return o; };
+/* jenis order kosong ATAU sama dengan judul sub-proses pertama -> cukup satu baris oranye (tidak dobel) */
+const normJ=t=>String(t||"").toLowerCase().replace(/[^a-z0-9]+/g,"");
+const viewOrder=o=>{ const it=o.items||[], h=it[0]; if(!h||!h.j) return o; const a=normJ(o.o), b=normJ(h.d);
+  if(!a||a===b||(a.length>3&&(b.includes(a)||a.includes(b)))) return Object.assign({},o,{o:h.d,ok:h.s||o.ok,items:it.slice(1),_h0:h}); return o; };
 const seg0=O=>O._h0&&hHasPay(O._h0)?segPay(O._h0,false):{st:"-",dt:"-",bg:"#FFFFFF"};
 const paySegs=o=>{ const st=[0]; (o.items||[]).forEach((h,k)=>{ if(h.j&&hHasPay(h)) st.push(k+1); }); return st; };
 const payDateText=o=>[/^sudah/i.test(o.dp||"")&&o.dpd?`DP: ${dmyFull(o.dpd)}`:"",/^lunas/i.test(o.ls||"")&&o.lsd?`Pelunasan: ${dmyFull(o.lsd)}`:""].filter(Boolean).join("\n")||"-";
