@@ -216,6 +216,10 @@ body.is-dragging,body.is-dragging *{cursor:grabbing!important;user-select:none}
 .hdpay.ro{font-size:12px;color:var(--ink);border-style:solid}
 .clr-wrap{display:flex;gap:8px;align-items:center}.clr-wrap .in{flex:1}
 .clr{flex:none;border:1px solid var(--line);background:var(--paper);color:var(--bad);border-radius:10px;padding:9px 12px;font:inherit;font-weight:700;font-size:13px;cursor:pointer}.clr:hover{background:var(--bad-soft)}
+.langbtn{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:99px;padding:6px 12px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}.langbtn:hover{background:var(--soft)}
+.langbtn.lg{display:block;margin:14px auto 0}
+html[lang="ko"] body{word-break:keep-all}
+.verwarn{position:sticky;top:0;z-index:80;background:#FDECEC;color:#8B1E1E;border-bottom:1px solid #F3B5B5;padding:10px 16px;font-size:13px;text-align:center}
 [hidden]{display:none!important}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
 .top-in{max-width:1180px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -341,6 +345,7 @@ table.t{border-collapse:collapse;width:100%;font-size:13px;min-width:1180px}
     <div class="brand"><div class="mark">CT</div>Company Team</div>
     <nav class="tabs" id="tabs"></nav>
     <span class="savechip" id="saveChip" hidden></span>
+    <button class="langbtn" id="langBtn" type="button" data-noi18n title="Ganti bahasa / 언어 변경"></button>
     <button class="me" id="meBtn" title="Pengaturan"><span class="av" id="meAv"></span><span><b id="meName"></b><small id="meRole"></small></span></button>
   </div></header>
   <main>
@@ -405,6 +410,99 @@ table.t{border-collapse:collapse;width:100%;font-size:13px;min-width:1180px}
 <!-- Link server disimpan terpisah di config.js, jadi file ini bisa diganti kapan saja tanpa mengedit link -->
 <script src="config.js"></script>
 <script>
+/* ================= BAHASA KOREA (한국어) ================= */
+const LANG=(()=>{ try{ return localStorage.getItem("ct-lang")||"id"; }catch(e){ return "id"; } })();
+const KO={
+"Company Team":"Company Team","Order & Laporan Harian":"주문 및 일일 보고","Masuk dengan nama dan PIN Anda.":"이름과 PIN으로 로그인하세요.","Masuk sebagai":"사용자","Masuk":"로그인","PIN":"PIN","Memuat":"불러오는 중","Memuat…":"불러오는 중…",
+"Dashboard":"대시보드","Order":"주문","Quotation":"견적","Laporan saya":"내 보고","Akun":"계정","Keluar":"로그아웃","Pengaturan":"설정",
+"Dashboard Company Team":"Company Team 대시보드","Laporan ke Manager":"매니저에게 보고","Kirim laporan ke Manager":"매니저에게 보고 발송","Muat ulang":"새로고침","↻ Muat ulang":"↻ 새로고침",
+"order aktif":"진행 중 주문","item dokumen berjalan":"진행 중 서류 항목","menunggu persyaratan klien":"고객 서류 대기","lewat target":"기한 초과","item belum ada PIC":"담당자 미지정 항목","update hari ini":"오늘 업데이트",
+"Beban kerja per PIC":"담당자별 업무량","Item yang belum selesai, menurut status.":"상태별 미완료 항목.","Laporan tim hari ini":"오늘 팀 보고","Update Admin dan Field Team dari menu Laporan saya.":"관리자 및 현장팀이 '내 보고' 메뉴에서 업데이트합니다.",
+"Belum ada laporan":"보고 없음","Belum dikirim ke Manager. Laporan juga terkirim otomatis setiap sore.":"아직 매니저에게 발송되지 않았습니다. 보고서는 매일 오후 자동 발송됩니다.",
+"Ada item tanpa PIC":"담당자 없는 항목 있음","Ada yang lewat target":"기한 초과 항목 있음",
+"Item saya":"내 항목","Progres hari ini":"오늘 진행","Pilih status baru dan tulis progres, lalu simpan.":"새 상태를 선택하고 진행 내용을 작성한 후 저장하세요.","Simpan update":"업데이트 저장","Tulis lalu tekan Enter":"입력 후 Enter",
+"Aktivitas lain hari ini":"오늘의 기타 활동","Meeting, kunjungan instansi, antar dokumen, dan lainnya.":"회의, 기관 방문, 서류 전달 등.","Tambah":"추가",
+"Belum ada item yang ditugaskan ke Anda. Admin Company dapat menugaskan dari menu Order.":"배정된 항목이 없습니다. 관리자가 주문 메뉴에서 배정할 수 있습니다.",
+"+ Buat order baru":"+ 새 주문","Buat order baru":"새 주문","Buat order":"주문 생성","📊 Collect data report":"📊 보고서 수집","Collect data report":"보고서 수집","Collect data report – Quotation":"보고서 수집 – 견적",
+"Cari no. order, perusahaan, atau dokumen":"주문 번호, 회사 또는 서류 검색","Order aktif":"진행 중 주문","Semua order":"전체 주문","Semua PIC":"전체 담당자","Selesai semua":"전체 완료",
+"Menunggu persyaratan":"서류 대기","Belum proses":"미진행","On proses":"진행 중","Selesai":"완료","Hold":"보류","Cancel":"취소","Lewat target":"기한 초과","Menunggu":"대기","Menunggu TTD klien":"고객 서명 대기",
+"Tutup":"닫기","Buka":"열기","Buka detail order":"주문 상세 열기","Item saat ini":"현재 항목","Tampilkan item saat ini saja":"현재 항목만 보기",
+"Item dokumen":"서류 항목","Dokumen / proses":"서류 / 절차","PIC":"담당자","Tempat proses":"처리 장소","Lama (hr)":"소요(일)","Lama (hari kerja)":"소요(영업일)","Tgl submit":"제출일","Target selesai":"완료 목표일","Status":"상태","Keterangan":"비고",
+"Tgl submit berikutnya otomatis lanjut dari target item sebelumnya":"다음 제출일을 이전 항목 목표일에 자동 연결","+ Tambah item":"+ 항목 추가","+ Tambah judul sub-proses":"+ 하위 절차 제목 추가","📅 + Proses lanjutan (dengan tanggal)":"📅 + 후속 절차 (날짜 포함)",
+"Riwayat order":"주문 이력","Tulis perkembangan terbaru order ini":"이 주문의 최신 진행 상황 입력","✎ Ubah data order":"✎ 주문 정보 수정","🗑 Hapus order":"🗑 주문 삭제","– Pilih PIC –":"– 담당자 선택 –",
+"Seret untuk memindahkan":"끌어서 이동","Pindahkan":"이동","Sisipkan di bawah baris ini":"이 행 아래에 삽입","Jadikan judul sub-proses":"하위 절차 제목으로 변경","Hapus":"삭제","Pilih dari kalender":"달력에서 선택","Tgl OK":"승인일",
+"STATUS BAYAR":"결제 상태","DP":"선금","Tgl bayar DP":"선금 결제일","Nominal DP (Rp)":"선금 금액 (Rp)","Pelunasan":"잔금","Tgl pelunasan":"잔금 결제일","Nominal pelunasan (Rp)":"잔금 금액 (Rp)","Total bayar (Rp)":"총 결제액 (Rp)","Nilai order":"주문 금액",
+"Sudah dibayar":"결제 완료액","Sisa pelunasan":"잔액","Belum DP":"선금 미납","Sudah DP":"선금 납부","Belum lunas":"미완납","Lunas":"완납","💰 Bayar":"💰 결제","Total invoice":"인보이스 총액","Total bayar":"총 결제액","Tgl DP":"선금일","Tgl lunas":"완납일",
+"No. order":"주문 번호","Tgl OK proses":"진행 승인일","Nama perusahaan":"회사명","Jenis order":"주문 유형","(opsional)":"(선택)","✕ Hapus":"✕ 지우기","Boleh dikosongkan jika tidak dipakai":"사용하지 않으면 비워 두세요","Boleh dikosongkan. Misalnya Pendirian PMA, Perubahan direksi":"비워 둘 수 있음. 예: PMA 설립, 이사 변경",
+"Misalnya 80123 (boleh dikosongkan)":"예: 80123 (선택)","Sub-proses / item awal (opsional, satu per baris)":"하위 절차 / 초기 항목 (선택, 한 줄에 하나)","Total bayar / nilai order (Rp)":"총 결제액 / 주문 금액 (Rp)","Status DP":"선금 상태","Status pelunasan":"잔금 상태",
+"Order baru langsung tersimpan ke Google Sheets. Setelah dibuat, tambahkan judul sub-proses dan item dokumennya.":"새 주문은 바로 Google Sheets에 저장됩니다. 생성 후 하위 절차와 서류 항목을 추가하세요.",
+"Simpan":"저장","Batal":"취소","Kosongkan":"비우기","Keterangan opsional":"비고 (선택)","Item baru":"새 항목","Belum ada quotation. Klik":"견적이 없습니다. 클릭:","Belum ada quotation yang cancel.":"취소된 견적이 없습니다.","Contoh: 103.10.20.30, 103.10.21.*":"예: 103.10.20.30, 103.10.21.*",
+"Penerima bisa melihat laporan terbaru (format ini) tanpa login dan tanpa bisa mengubah data. Link bisa dinonaktifkan kapan saja.":"수신자는 로그인 없이 최신 보고서(이 형식)를 볼 수 있으며 데이터를 변경할 수 없습니다. 링크는 언제든 비활성화할 수 있습니다.",
+"Awali dengan # untuk judul sub-proses, contoh:\n#PENINGKATAN MODAL DASAR\nRUPS\nAkta Perubahan\n#UPDATE OSS\nUpdate OSS - Perubahan Saham":"하위 절차 제목은 #로 시작, 예:\n#자본금 증액\nRUPS\n정관 변경\n#OSS 업데이트\nOSS 업데이트 - 주식 변경",
+"+ Tambah quotation":"+ 견적 추가","Tambah quotation":"견적 추가","Status pesanan dan hal yang dibahas dengan klien.":"주문 상태 및 고객 협의 내용.","Aktif":"활성","Cari perusahaan, order, kategori, atau pembahasan":"회사, 주문, 분류 또는 협의 내용 검색","Semua status":"전체 상태","Semua periode":"전체 기간",
+"No":"번호","Kategori":"분류","Perusahaan":"회사","Jumlah (Rp)":"금액 (Rp)","Status order":"주문 상태","Hal yang dibahas dengan klien":"고객 협의 내용","OK Proses":"진행 승인","Tanggal":"날짜",
+"Diisi manual. Tersimpan langsung ke Google Sheets (sheet Daftar Quotation).":"수동 입력. Google Sheets(견적 목록 시트)에 바로 저장됩니다.","Misalnya Perizinan, Akun, Legal":"예: 인허가, 계정, 법무","Misalnya Pengalihan akun WLK, order 23.10.26":"예: WLK 계정 이전, 주문 23.10.26","Misalnya: menunggu approval quotation dari atasan, sudah follow up via WA":"예: 상사 견적 승인 대기, WA로 후속 연락 완료",
+"⬇ Unduh Excel":"⬇ 엑셀 다운로드","🖨 Cetak / simpan PDF":"🖨 인쇄 / PDF 저장","🖨 Cetak / PDF":"🖨 인쇄 / PDF","✉ Kirim ke Manager":"✉ 매니저에게 발송","↻ Ambil data terbaru":"↻ 최신 데이터 가져오기","🔗 Link view":"🔗 열람 링크","🔗 Link view laporan":"🔗 보고서 열람 링크",
+"Nama penerima, misalnya Pak Direktur / Klien PT ABC":"수신자 이름, 예: 이사님 / PT ABC 고객","Berlaku 7 hari":"7일 유효","Berlaku 30 hari":"30일 유효","Berlaku 90 hari":"90일 유효","Tanpa batas":"무기한","Buat link":"링크 생성","Belum ada link.":"링크 없음.","Salin link":"링크 복사","Nonaktifkan":"비활성화","Penerima":"수신자","Berlaku sampai":"유효 기간","Dilihat":"조회","Kedaluwarsa":"만료","Nonaktif":"비활성",
+"Hanya untuk dilihat":"열람 전용","Laporan Order Company Team":"Company Team 주문 보고서",
+"Ganti PIN saya":"내 PIN 변경","PIN lama":"기존 PIN","PIN baru":"새 PIN","Simpan PIN":"PIN 저장","🔒 Pengaturan sistem":"🔒 시스템 설정","Khusus administrator. Masukkan PIN Administrator untuk membuka.":"관리자 전용. 관리자 PIN을 입력하세요.","PIN Administrator":"관리자 PIN","Kunci":"잠금",
+"Terbuka. Otomatis terkunci lagi setelah 15 menit atau saat jendela ini ditutup.":"열림. 15분 후 또는 창을 닫으면 자동으로 잠깁니다.","Email laporan ke Manager":"매니저 보고 이메일","Email Manager":"매니저 이메일","CC":"참조","Simpan email":"이메일 저장",
+"Pembatasan akses IP":"IP 접근 제한","Batasi aplikasi hanya bisa dipakai dari IP publik kantor. Peran yang dicentang di bawah tetap boleh akses dari luar.":"사무실 공인 IP에서만 앱을 사용하도록 제한합니다. 아래에 체크된 역할은 외부 접속이 허용됩니다.","Aktifkan pembatasan IP":"IP 제한 사용","IP diizinkan (pisahkan koma, boleh memakai *)":"허용 IP (쉼표로 구분, * 사용 가능)","Boleh akses dari mana saja:":"어디서나 접속 허용:","IP Anda sekarang:":"현재 IP:","+ Tambahkan IP saya":"+ 내 IP 추가","Simpan pembatasan IP":"IP 제한 저장",
+"Nama pengguna":"사용자 이름","Ganti nama staff dan admin. PIC item, laporan, dan riwayat ikut diperbarui otomatis.":"직원 및 관리자 이름 변경. 담당자, 보고, 이력이 자동으로 갱신됩니다.","Hapus semua data":"전체 데이터 삭제","Manager":"매니저","Admin":"관리자","Field Team":"현장팀",
+"Tetap masuk":"로그인 유지","Jam sekarang":"현재 시각","Lihat semua update":"모든 업데이트 보기","Update hari ini":"오늘 업데이트","Rp 0":"Rp 0","oleh Import Excel":"엑셀 가져오기",
+"Senin":"월요일","Selasa":"화요일","Rabu":"수요일","Kamis":"목요일","Jumat":"금요일","Sabtu":"토요일","Minggu":"일요일",
+"Update dicatat":"업데이트가 기록되었습니다","Item dihapus":"항목이 삭제되었습니다","Data order disimpan":"주문 정보가 저장되었습니다","Link dinonaktifkan":"링크가 비활성화되었습니다","Data terbaru dimuat":"최신 데이터를 불러왔습니다","Laporan terkirim":"보고서가 발송되었습니다","File Excel diunduh":"엑셀 파일이 다운로드되었습니다","Izinkan pop-up untuk mencetak":"인쇄하려면 팝업을 허용하세요","Isi nama perusahaan":"회사명을 입력하세요","Pengaturan sistem terbuka":"시스템 설정이 열렸습니다","Email tersimpan":"이메일이 저장되었습니다","PIN tersimpan":"PIN이 저장되었습니다",
+"Ketik HAPUS SEMUA untuk konfirmasi":"확인하려면 HAPUS SEMUA를 입력하세요","Isi PIN lama dan PIN baru":"기존 PIN과 새 PIN을 입력하세요"
+};
+const KO_BLN={Jan:1,Feb:2,Mar:3,Apr:4,Mei:5,Jun:6,Jul:7,Agu:8,Sep:9,Okt:10,Nov:11,Des:12,Januari:1,Februari:2,Maret:3,April:4,Juni:6,Juli:7,Agustus:8,September:9,Oktober:10,November:11,Desember:12};
+const KO_DAY={Senin:"월요일",Selasa:"화요일",Rabu:"수요일",Kamis:"목요일",Jumat:"금요일",Sabtu:"토요일",Minggu:"일요일"};
+const koDate=s=>String(s).replace(/(?:(Senin|Selasa|Rabu|Kamis|Jumat|Sabtu|Minggu),\s*)?(\d{1,2})\s+(Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember|Jan|Feb|Mar|Apr|Jun|Jul|Agu|Sep|Okt|Nov|Des)\s+(\d{4})/g,(m,d,dd,mm,y)=>`${y}년 ${KO_BLN[mm]}월 ${+dd}일${d?" ("+KO_DAY[d]+")":""}`);
+const KO_ST={"Aktif":"활성","Menunggu":"대기","On proses":"진행 중","Selesai":"완료","Lewat target":"기한 초과","Belum proses":"미진행","Hold":"보류"};
+const KO_RULES=[
+ [/^(\d+) order, (\d+) item dokumen\.$/,(m,a,b)=>`주문 ${a}건, 서류 항목 ${b}건.`],
+ [/^(\d+)\/(\d+) selesai$/,(m,a,b)=>`${a}/${b} 완료`],
+ [/^(\d+) menunggu$/,(m,a)=>`대기 ${a}`],[/^(\d+) lewat target$/,(m,a)=>`기한 초과 ${a}`],[/^(\d+) on proses$/,(m,a)=>`진행 중 ${a}`],[/^(\d+) hold$/,(m,a)=>`보류 ${a}`],
+ [/^(\d+) sub-proses$/,(m,a)=>`하위 절차 ${a}개`],[/^Lihat (\d+) item (berjalan|menunggu persyaratan|lewat target|.+)$/,(m,a)=>`항목 ${a}개 보기`],[/^\+ (\d+) item berikutnya$/,(m,a)=>`+ 다음 항목 ${a}개`],
+ [/^(.+)\. OK proses (.+)$/,(m,a,b)=>`${tKO(a)}. 진행 승인 ${koDate(b)}`],
+ [/^No\. order (.+)$/,(m,a)=>`주문 번호 ${koDate(a.replace(/OK proses/g,"진행 승인"))}`],
+ [/^Selamat (pagi|siang|sore|malam)(?:, (.+))?$/,(m,a,n)=>({pagi:"좋은 아침입니다",siang:"안녕하세요",sore:"좋은 오후입니다",malam:"좋은 저녁입니다"}[a])+(n?", "+n+"님":"")],
+ [/^Laporan harian (.+)$/,(m,a)=>`${a} 일일 보고`],[/^Lama: (\d+) hari kerja$/,(m,a)=>`소요: 영업일 ${a}일`],[/^Tempat: (.*)$/,(m,a)=>`처리 장소: ${a}`],
+ [/^Submit: (.+)$/,(m,a)=>`제출: ${koDate(a)}`],[/^Target: (.+)$/,(m,a)=>`목표: ${koDate(a)}`],[/^Keterangan: ([\s\S]+)$/,(m,a)=>`비고: ${a}`],
+ [/^(Aktif|Menunggu|On proses|Selesai|Lewat target) \((\d+)\)$/,(m,a,b)=>`${KO_ST[a]} (${b})`],[/^(Belum proses|Menunggu|On proses|Hold): (\d+)$/,(m,a,b)=>`${KO_ST[a]}: ${b}`],
+ [/^History cancel \((\d+)\)$/,(m,a)=>`취소 이력 (${a})`],[/^📜 Log riwayat \((\d+)\)$/,(m,a)=>`📜 변경 이력 (${a})`],
+ [/^(\d+) item diupdate$/,(m,a)=>`항목 ${a}개 업데이트`],[/^(\d+) update item$/,(m,a)=>`항목 업데이트 ${a}건`],
+ [/^(.+) \((Admin|Manager|Field Team)\)$/,(m,a,b)=>`${a} (${KO[b]})`],
+ [/^Laporan detail (\d+) order dan (\d+) item, per (.+)\. Data diambil dari Google Sheets saat ini\.$/,(m,a,b,c)=>`주문 ${a}건, 항목 ${b}건 상세 보고서 (${koDate(c)} 기준). 현재 Google Sheets 데이터입니다.`],
+ [/^(.+)\. Data langsung dari Google Sheets\.$/,(m,a)=>`${koDate(a)}. Google Sheets 실시간 데이터.`],[/^(.+)\. Setiap update tersimpan langsung ke Google Sheets\.$/,(m,a)=>`${koDate(a)}. 모든 업데이트는 Google Sheets에 바로 저장됩니다.`],
+ [/^Status pesanan dan hal yang dibahas dengan klien\. (\d+) data aktif(?:, total (.+?))? \(tanpa cancel\)\.$/,(m,a,b)=>`주문 상태 및 고객 협의 내용. 진행 중 ${a}건${b?", 합계 "+b:""} (취소 제외).`],
+ [/^(\d+) quotation aktif, total (.+?) \(tanpa cancel\)(.*)$/,(m,a,b,c)=>`진행 중 견적 ${a}건, 합계 ${b} (취소 제외)${c.replace(/Semua periode/,"전체 기간").replace(/cancel di history/,"건 취소 이력")}`],
+ [/^⏳ Menyimpan… (\d+)%$/,(m,a)=>`⏳ 저장 중… ${a}%`],[/^✓ Tersimpan 100% · (.+)$/,(m,a)=>`✓ 저장 완료 100% · ${a}`],[/^⚠ Gagal menyimpan$/,()=>"⚠ 저장 실패"],
+ [/^Sisa (Rp .+)$/,(m,a)=>`잔액 ${a}`],[/^Gagal(.*)$/,(m,a)=>`실패${a}`],
+ [/^(Senin|Selasa|Rabu|Kamis|Jumat|Sabtu|Minggu), \d.+$/,m=>koDate(m)],[/^\d{1,2} (Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember) \d{4}$/,m=>koDate(m)]
+];
+function tKO(s){ if(LANG!=="ko"||s==null) return s; const raw=String(s), t=raw.trim(); if(!t) return raw;
+  let out=KO[t]; if(out==null){ for(const [re,fn] of KO_RULES){ if(re.test(t)){ out=t.replace(re,fn); break; } } }
+  return out==null?raw:raw.replace(t,out); }
+function i18nNode(root){
+  if(LANG!=="ko") return;
+  const skip=el=>el&&el.closest&&el.closest("script,style,textarea,.rep-prev,#vvBox,[data-noi18n]");
+  const doText=n=>{ if(skip(n.parentElement)) return; const p=n.parentElement; if(p&&p.tagName==="OPTION"&&!p.hasAttribute("value")) p.setAttribute("value",p.textContent);
+    const v=tKO(n.nodeValue); if(v!==n.nodeValue) n.nodeValue=v; };
+  const skipA=el=>el&&el.closest&&el.closest("script,style,.rep-prev,#vvBox,[data-noi18n]");
+  const doEl=e=>{ if(skipA(e)) return; ["placeholder","title","aria-label"].forEach(a=>{ const v=e.getAttribute&&e.getAttribute(a); if(v){ const t=tKO(v); if(t!==v) e.setAttribute(a,t); } }); };
+  if(root.nodeType===3){ doText(root); return; }
+  if(root.nodeType!==1) return; doEl(root);
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT|NodeFilter.SHOW_ELEMENT); let n; while(n=w.nextNode()){ if(n.nodeType===3) doText(n); else doEl(n); }
+}
+if(LANG==="ko"){ document.documentElement.lang="ko";
+  const mo=new MutationObserver(ms=>{ mo.disconnect(); ms.forEach(m=>{ if(m.type==="characterData") i18nNode(m.target); else m.addedNodes.forEach(i18nNode); if(m.type==="attributes") i18nNode(m.target); }); mo.observe(document.body,{childList:true,subtree:true,characterData:true}); });
+  const start=()=>{ i18nNode(document.body); mo.observe(document.body,{childList:true,subtree:true,characterData:true}); };
+  if(document.body) start(); else addEventListener("DOMContentLoaded",start);
+  const _c=window.confirm.bind(window), _p=window.prompt.bind(window); window.confirm=m=>_c(tKO(m)); window.prompt=(m,d)=>_p(tKO(m),d);
+}
+function setLang(l){ try{ localStorage.setItem("ct-lang",l); }catch(e){} location.reload(); }
+
+
 const API_URL=(window.CT_API_URL||"").trim();
 (function(){
 "use strict";
@@ -483,8 +581,12 @@ const CKEY="ct-cache";
 function saveCache(d){ try{ localStorage.setItem(CKEY,JSON.stringify({token:TOKEN,at:Date.now(),d})); }catch(e){} }
 function loadCache(){ try{ const c=JSON.parse(localStorage.getItem(CKEY)||"null"); if(c&&c.token===TOKEN&&c.d&&Date.now()-c.at<7*864e5) return c.d; }catch(e){} return null; }
 function syncing(on){ document.body.classList.toggle("syncing",!!on); }
+const NEED_SERVER="2026-11-24";
+function checkServer(d){ const old=!d.ver||d.ver<NEED_SERVER; let b=document.getElementById("verWarn");
+  if(old&&!b){ b=document.createElement("div"); b.id="verWarn"; b.className="verwarn"; b.innerHTML="⚠ <b>Server Apps Script belum versi terbaru</b> ("+(d.ver||"versi lama")+"). Tempel Code.gs terbaru lalu <b>Terapkan &gt; Kelola deployment &gt; Versi baru</b>. Beberapa fitur (jenis order opsional, nominal bayar per proses) belum berjalan."; document.body.prepend(b); }
+  if(!old&&b) b.remove(); }
 async function reload(quiet){ syncing(true);
-  try{ const d=await run("getAll"); build(d); ME=d.me; saveCache(d); if(!quiet) $("#loading").hidden=true; return true; }
+  try{ const d=await run("getAll"); build(d); ME=d.me; saveCache(d); checkServer(d); if(!quiet) $("#loading").hidden=true; return true; }
   catch(e){ if(!/^LOGIN:/.test(e.message)&&!quiet) $("#loading").textContent="Gagal memuat: "+e.message; else if(quiet&&!/^LOGIN:/.test(e.message)) toast("Gagal memperbarui data: "+e.message); return false; }
   finally{ syncing(false); } }
 const busy=()=>(typeof SQ!=="undefined"&&(SQ.length||SQRUN))||$("#dlg").open||$("#setDlg").open||(document.activeElement&&document.activeElement.matches("input,select,textarea"));
@@ -494,12 +596,13 @@ const PICS=()=>DB.users.filter(u=>u.role!=="Manager").map(u=>u.nama);
 const PIC_OPTS=()=>[...new Set([...(DB.users||[]).map(u=>u.nama),...(DB.staff||[])].filter(Boolean))].sort((a,b)=>a.localeCompare(b));
 const picSelect=(cur,dis)=>{ const L=PIC_OPTS(); if(cur&&!L.includes(cur)) L.push(cur); return `<select class="in" data-f="p"${dis}><option value="">– Pilih PIC –</option>${L.map(n=>`<option${n===cur?" selected":""}>${esc(n)}</option>`).join("")}</select>`; };
 /* pembayaran order */
-const payBadge=o=>`${paidOf(o)?`<span class="pill s-on" title="Sudah dibayar">${rpS(paidOf(o))}</span>`:""}${(()=>{ const sh=(o.items||[]).filter(h=>h.j).reduce((a,h)=>a+hSisa(h),0), tot=(+o.tb?sisaOf(o):0)+sh; return tot>0?`<span class="pill s-menunggu" title="Total sisa pelunasan (order + proses lanjutan)">Sisa ${rpS(tot)}</span>`:""; })()}${/^sudah/i.test(o.dp||"")?`<span class="pill s-selesai" title="DP ${o.dpd?fmt(o.dpd):""}">DP ✓</span>`:o.dp?`<span class="pill s-belum">Belum DP</span>`:""}${/^lunas/i.test(o.ls||"")?`<span class="pill s-selesai" title="Lunas ${o.lsd?fmt(o.lsd):""}">Lunas ✓</span>`:o.ls?`<span class="pill s-menunggu">Belum lunas</span>`:""}`;
+const payBadge=o=>{ const H=(o.items||[]).filter(h=>h.j&&hHasPay(h)), paid=H.reduce((a,h)=>a+hPaid(h),0), sisa=H.reduce((a,h)=>a+hSisa(h),0), inv=H.reduce((a,h)=>a+(+h.tb||0),0);
+  return `${paid?`<span class="pill s-on" title="Sudah dibayar dari total invoice ${rpS(inv)}">${rpS(paid)}</span>`:""}${sisa>0?`<span class="pill s-menunggu" title="Sisa pelunasan">Sisa ${rpS(sisa)}</span>`:inv&&!sisa?`<span class="pill s-selesai">Lunas ✓</span>`:""}`; };
 const paidOf=o=>(/^sudah/i.test(o.dp||"")?(+o.dpn||0):0)+(/^lunas/i.test(o.ls||"")?(+o.lsn||0):0);
 const sisaOf=o=>Math.max(0,(+o.tb||0)-paidOf(o));
 /* pembayaran per sub-proses / proses lanjutan (baris judul) */
 const hPaid=h=>(+h.dpn||0)+(+h.lsn||0), hSisa=h=>Math.max(0,(+h.tb||0)-hPaid(h)), hHasPay=h=>!!(+h.tb||+h.dpn||+h.lsn);
-const hPayText=h=>hHasPay(h)?[+h.tb?`Total ${rpS(h.tb)}`:"",+h.dpn?`DP ${rpS(h.dpn)}${h.dpd?" ("+dmyFull(h.dpd)+")":""}`:"",+h.lsn?`Pelunasan ${rpS(h.lsn)}${h.lsd?" ("+dmyFull(h.lsd)+")":""}`:"",+h.tb?`Sisa ${rpS(hSisa(h))}`:""].filter(Boolean).join(" · "):"";
+const hPayText=h=>hHasPay(h)?[+h.tb?`Total invoice ${rpS(h.tb)}`:"",+h.dpn?`DP ${rpS(h.dpn)}${h.dpd?" ("+dmyFull(h.dpd)+")":""}`:"",+h.lsn?`Pelunasan ${rpS(h.lsn)}${h.lsd?" ("+dmyFull(h.lsd)+")":""}`:"",+h.tb?`Sisa ${rpS(hSisa(h))}`:""].filter(Boolean).join(" · "):"";
 const rpS=n=>"Rp "+(+n||0).toLocaleString("id-ID");
 /* kolom STATUS BAYAR terpisah: status (+nominal) dan tanggal bayar */
 const payStatusText=o=>[+o.tb?`Total bayar: ${rpS(o.tb)}`:"",...((o.items||[]).filter(h=>h.j&&hHasPay(h)).map(h=>`${h.d}: ${hPayText(h)}`)),o.dp?`DP: ${o.dp}${/^sudah/i.test(o.dp)&&o.dpn?" "+rpS(o.dpn):""}`:"",o.ls?`Pelunasan: ${o.ls}${/^lunas/i.test(o.ls)&&o.lsn?" "+rpS(o.lsn):""}`:"",paidOf(o)?`Sudah dibayar: ${rpS(paidOf(o))}`:"",+o.tb?`Sisa pelunasan: ${rpS(sisaOf(o))}`:""].filter(Boolean).join("\n")||"-";
@@ -507,7 +610,7 @@ const payStatusText=o=>[+o.tb?`Total bayar: ${rpS(o.tb)}`:"",...((o.items||[]).f
 function segPay(src,isOrder){
   const tb=+src.tb||0, dpOk=isOrder?/^sudah/i.test(src.dp||""):+src.dpn>0, lsOk=isOrder?/^lunas/i.test(src.ls||""):+src.lsn>0;
   const dpn=dpOk?(+src.dpn||0):0, lsn=lsOk?(+src.lsn||0):0, paid=dpn+lsn, sisa=Math.max(0,tb-paid);
-  const L=[]; if(tb) L.push(`Total bayar : ${rpS(tb)}`);
+  const L=[]; if(tb) L.push(`Total invoice : ${rpS(tb)}`);
   if(dpOk) L.push(`DP : ${dpn?rpS(dpn):"Sudah"}`); else if(isOrder&&src.dp) L.push(`DP : ${src.dp}`);
   if(lsOk) L.push(`Pelunasan : ${lsn?rpS(lsn):"Lunas"}`); else if(isOrder&&src.ls) L.push(`Pelunasan : ${src.ls}`);
   if(tb) L.push(`Sisa : ${rpS(sisa)}`);
@@ -515,6 +618,9 @@ function segPay(src,isOrder){
   const bg=!L.length?"#FFFFFF":(lsOk&&(!tb||sisa===0))||(tb&&sisa===0)?"#C6EFCE":paid?"#FFF2CC":"#F8CBAD";
   return {st:L.join("\n")||"-",dt:D.join("\n")||"-",bg};
 }
+/* jika jenis order kosong, judul sub-proses pertama dipakai sebagai baris order */
+const viewOrder=o=>{ const it=o.items||[]; if(!String(o.o||"").trim()&&it[0]&&it[0].j) return Object.assign({},o,{o:it[0].d,ok:it[0].s||o.ok,items:it.slice(1),_h0:it[0]}); return o; };
+const seg0=O=>O._h0&&hHasPay(O._h0)?segPay(O._h0,false):{st:"-",dt:"-",bg:"#FFFFFF"};
 const paySegs=o=>{ const st=[0]; (o.items||[]).forEach((h,k)=>{ if(h.j&&hHasPay(h)) st.push(k+1); }); return st; };
 const payDateText=o=>[/^sudah/i.test(o.dp||"")&&o.dpd?`DP: ${dmyFull(o.dpd)}`:"",/^lunas/i.test(o.ls||"")&&o.lsd?`Pelunasan: ${dmyFull(o.lsd)}`:""].filter(Boolean).join("\n")||"-";
 const payBg=o=>/^lunas/i.test(o.ls||"")||(+o.tb&&sisaOf(o)===0)?"#C6EFCE":/^sudah/i.test(o.dp||"")?"#FFF2CC":o.dp||o.ls?"#F8CBAD":"#FFFFFF";
@@ -830,22 +936,14 @@ function openNewOrder(){
     <label class="f">No. order<input class="in" id="nNo" placeholder="Misalnya 80123 (boleh dikosongkan)"></label>
     <label class="f">Tgl OK proses<input class="in" id="nOk" type="date" value="${TODAY}"></label>
     <label class="f full">Nama perusahaan<input class="in" id="nC" placeholder="PT ..."></label>
-    <label class="f full">Jenis order <small>(opsional)</small><span class="clr-wrap"><input class="in" id="nO" placeholder="Boleh dikosongkan. Misalnya Pendirian PMA, Perubahan direksi"><button type="button" class="clr" data-clr="nO" title="Kosongkan">✕ Hapus</button></span></label>
-    <label class="f">Total bayar / nilai order (Rp)<input class="in" id="nTb" inputmode="numeric" placeholder="0"></label><span></span>
-    <label class="f">Status DP<select class="in" id="nDp"><option value="">–</option><option>Belum DP</option><option>Sudah DP</option></select></label>
-    <label class="f">Tgl bayar DP<input class="in" id="nDpd" type="date"></label>
-    <label class="f">Nominal DP (Rp)<input class="in" id="nDpn" inputmode="numeric" placeholder="0"></label><span></span>
-    <label class="f">Status pelunasan<select class="in" id="nLs"><option value="">–</option><option>Belum lunas</option><option>Lunas</option></select></label>
-    <label class="f">Tgl pelunasan<input class="in" id="nLsd" type="date"></label>
-    <label class="f">Nominal pelunasan (Rp)<input class="in" id="nLsn" inputmode="numeric" placeholder="0"></label>
+
     <label class="f full">Sub-proses / item awal (opsional, satu per baris)<textarea class="in" id="nItems" placeholder="Awali dengan # untuk judul sub-proses, contoh:&#10;#PENINGKATAN MODAL DASAR&#10;RUPS&#10;Akta Perubahan&#10;#UPDATE OSS&#10;Update OSS - Perubahan Saham"></textarea></label>
   </div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn pri" id="nSave">Buat order</button><button class="btn" id="nCancel">Batal</button></div>`;
   $("#nCancel").onclick=()=>$("#dlg").close();
-  ["#nDpn","#nLsn","#nTb"].forEach(id=>$(id).oninput=e=>{ const n=+e.target.value.replace(/[^\d]/g,"")||0; e.target.value=n?n.toLocaleString("id-ID"):""; });
-  $("#nSave").onclick=async()=>{ const c=$("#nC").value.trim(), o=$("#nO").value.trim(); if(!c){ toast("Isi nama perusahaan"); return; }
+
+  $("#nSave").onclick=async()=>{ const c=$("#nC").value.trim(), o=""; if(!c){ toast("Isi nama perusahaan"); return; }
     const b=$("#nSave"); b.disabled=true; b.textContent="Menyimpan…";
-    try{ const dp=$("#nDp").value, ls=$("#nLs").value; if(/^sudah/i.test(dp)&&!$("#nDpd").value) $("#nDpd").value=TODAY; if(/^lunas/i.test(ls)&&!$("#nLsd").value) $("#nLsd").value=TODAY;
-      const r=await run("addOrder",{no:$("#nNo").value.trim(),c,o,ok:$("#nOk").value,dp,dpd:/^sudah/i.test(dp)?$("#nDpd").value:"",ls,lsd:/^lunas/i.test(ls)?$("#nLsd").value:"",dpn:$("#nDpn").value,lsn:$("#nLsn").value,tb:$("#nTb").value}); r.items=[]; DB.orders.push(r);
+    try{ const r=await run("addOrder",{no:$("#nNo").value.trim(),c,o,ok:$("#nOk").value}); r.items=[]; DB.orders.push(r);
       const lines=$("#nItems").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean); let after=null;
       for(const ln of lines){ const j=ln.startsWith("#"); const it=await run("addItem",r.no,{d:j?ln.replace(/^#+\s*/,"").toUpperCase():ln,j},null); r.items.push(it); }
       toast("Order dibuat"); OF.q=""; OF.st="aktif"; renderOrders(); openOrder(r.no);
@@ -869,7 +967,7 @@ function openOrder(no){ OPEN_NO=no;
   const can=i=>!F||i.p===ME.nama;
   const row=(i,k)=>{ if(i.j) return `<tr class="hd" data-k="${k}"><td colspan="8"><div class="hdw">${F?"":'<span class="drag" title="Seret untuk memindahkan" aria-label="Pindahkan">⋮⋮</span>'}<span class="hd-ic">▸</span><input class="in hd-in" data-f="d" value="${esc(i.d)}"${F?" disabled":""}><span class="hd-date" title="Tanggal OK proses lanjutan"><small>Tgl OK</small><span class="dwrap"><input class="in dt" data-f="s" value="${dmyShow(i.s)}" placeholder="ddmmyy" maxlength="20" autocomplete="off"${F?" disabled":""}><button type="button" class="dpick" data-pick title="Pilih dari kalender"${F?" disabled":""}>▾</button><input type="date" class="dhid" tabindex="-1" aria-hidden="true" value="${esc(i.s||"")}"></span></span></div>
       ${F?(hHasPay(i)?`<div class="hdpay ro">💰 ${esc(hPayText(i))}</div>`:""):`<div class="hdpay" data-hp="${k}"><b>💰 Bayar</b>
-        <label>Total bayar<input class="in rp" data-pay="tb" inputmode="numeric" placeholder="0" value="${+i.tb?(+i.tb).toLocaleString("id-ID"):""}"></label>
+        <label>Total invoice<input class="in rp" data-pay="tb" inputmode="numeric" placeholder="0" value="${+i.tb?(+i.tb).toLocaleString("id-ID"):""}"></label>
         <label>DP<input class="in rp" data-pay="dpn" inputmode="numeric" placeholder="0" value="${+i.dpn?(+i.dpn).toLocaleString("id-ID"):""}"></label>
         <label>Tgl DP<input class="in" type="date" data-pay="dpd" value="${esc(i.dpd||"")}"></label>
         <label>Pelunasan<input class="in rp" data-pay="lsn" inputmode="numeric" placeholder="0" value="${+i.lsn?(+i.lsn).toLocaleString("id-ID"):""}"></label>
@@ -889,18 +987,9 @@ function openOrder(no){ OPEN_NO=no;
     <label class="f">No. order<input class="in" id="oeNo" value="${esc(o.no)}"></label>
     <label class="f">Tgl OK proses<input class="in" id="oeOk" type="date" value="${esc(o.ok)}"></label>
     <label class="f full">Nama perusahaan<input class="in" id="oeC" value="${esc(o.c)}"></label>
-    <label class="f full">Jenis order <small>(opsional)</small><span class="clr-wrap"><input class="in" id="oeO" value="${esc(o.o)}" placeholder="Boleh dikosongkan jika tidak dipakai"><button type="button" class="clr" data-clr="oeO" title="Kosongkan">✕ Hapus</button></span></label></div>
+</div>
     <div style="display:flex;gap:8px;margin-top:10px"><button class="btn pri" id="oeSave">Simpan</button><button class="btn" id="oeCancel">Batal</button></div></div>
-  <div class="paybar"><b class="pb-title">STATUS BAYAR</b>
-    <label>Total bayar (Rp)<input class="in rp" id="pyTb" inputmode="numeric" placeholder="Nilai order" value="${o.tb?(+o.tb).toLocaleString("id-ID"):""}"></label>
-    <label>DP<select class="in" id="pyDp"><option value="">–</option><option${o.dp==="Belum DP"?" selected":""}>Belum DP</option><option${/^sudah/i.test(o.dp||"")?" selected":""}>Sudah DP</option></select></label>
-    <label class="pyd" ${/^sudah/i.test(o.dp||"")?"":"hidden"}>Tgl bayar DP<input class="in" type="date" id="pyDpd" value="${esc(o.dpd||"")}"></label>
-    <label class="pyd" ${/^sudah/i.test(o.dp||"")?"":"hidden"}>Nominal DP (Rp)<input class="in rp" id="pyDpn" inputmode="numeric" placeholder="0" value="${o.dpn?(+o.dpn).toLocaleString("id-ID"):""}"></label>
-    <label>Pelunasan<select class="in" id="pyLs"><option value="">–</option><option${o.ls==="Belum lunas"?" selected":""}>Belum lunas</option><option${/^lunas/i.test(o.ls||"")?" selected":""}>Lunas</option></select></label>
-    <label class="pyl" ${/^lunas/i.test(o.ls||"")?"":"hidden"}>Tgl pelunasan<input class="in" type="date" id="pyLsd" value="${esc(o.lsd||"")}"></label>
-    <label class="pyl" ${/^lunas/i.test(o.ls||"")?"":"hidden"}>Nominal pelunasan (Rp)<input class="in rp" id="pyLsn" inputmode="numeric" placeholder="0" value="${o.lsn?(+o.lsn).toLocaleString("id-ID"):""}"></label>
-    <div class="pb-sum"><div class="pb-total"><small>Sudah dibayar</small><b id="pyTot">${rpS(paidOf(o))}</b></div><div class="pb-total sisa"><small>Sisa pelunasan</small><b id="pySisa">${+o.tb?rpS(sisaOf(o)):"–"}</b></div></div>
-    <span class="hint" id="pySt"></span></div>`}
+`}
   <div class="ohead"><h3 style="font-size:15px;margin:0">Item dokumen</h3>
     <label class="chain"><input type="checkbox" id="chainOn"${CHAIN?" checked":""}> Tgl submit berikutnya otomatis lanjut dari target item sebelumnya</label></div>
   <div class="tw"><table class="t fit"><colgroup><col style="width:18%"><col style="width:8.5%"><col style="width:9%"><col style="width:5%"><col style="width:10%"><col style="width:10%"><col style="width:11.5%"><col style="width:20.5%"><col style="width:7.5%"></colgroup>
@@ -936,7 +1025,7 @@ function openOrder(no){ OPEN_NO=no;
     ["#pyDpn","#pyLsn","#pyTb"].forEach(id=>$(id).addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); e.target.blur(); } })); }
   if($("#oeBtn")){ $("#oeBtn").onclick=()=>{ $("#oeBox").hidden=!$("#oeBox").hidden; if(!$("#oeBox").hidden) $("#oeC").focus(); }; $("#oeCancel").onclick=()=>{ $("#oeBox").hidden=true; };
     $("#oeSave").onclick=async()=>{ const b=$("#oeSave"); b.disabled=true; b.textContent="Menyimpan…";
-      try{ const r=await run("updateOrder",no,{no:$("#oeNo").value.trim(),c:$("#oeC").value.trim(),o:$("#oeO").value.trim(),ok:$("#oeOk").value});
+      try{ const r=await run("updateOrder",no,{no:$("#oeNo").value.trim(),c:$("#oeC").value.trim(),o:o.o||"",ok:$("#oeOk").value});
         if(r.no!==no){ o.items.forEach(i=>i.no=r.no); DB.hist[r.no]=(DB.hist[no]||[]); delete DB.hist[no]; if(EXP.has(no)){ EXP.delete(no); EXP.add(r.no); } }
         Object.assign(o,{no:r.no,c:r.c,o:r.o,ok:r.ok}); if(r.note) (DB.hist[r.no]=DB.hist[r.no]||[]).push({d:TODAY,t:nowHM(),no:r.no,x:r.note,by:ME.nama});
         toast("Data order disimpan"); openOrder(r.no); }
@@ -1032,15 +1121,15 @@ function reportHtml(R,forEmail){
   const hd=(t,bg,ex)=>`<th ${ex||""} style="${bd};background:${bg};font-weight:700;text-align:center">${t}</th>`;
   const head=`<tr>${hd("NO","#73F5DF",'rowspan="2"')}${hd("No Order","#73F5DF",'rowspan="2"')}${hd("COMPANY","#73F5DF",'rowspan="2"')}${hd("TANGGAL OK PROSES","#73F5DF",'rowspan="2"')}${hd("ORDER","#73F5DF",'rowspan="2"')}${hd("PIC","#73F5DF",'rowspan="2"')}${hd("TEMPAT PROSES","#73F5DF",'rowspan="2"')}${hd("LAMA PROSES","#73F5DF",'rowspan="2"')}${hd("TANGGAL PROSES","#FFF7E1",'colspan="4"')}${hd("STATUS BAYAR","#E2EFDA",'colspan="2"')}</tr>
     <tr>${hd("DOK. SUBMIT","#FFF7E1")}${hd("TARGET SELESAI","#FFF7E1")}${hd("CURRENT STATUS","#FFF7E1")}${hd("KETERANGAN","#FFF7E1")}${hd("STATUS","#E2EFDA")}${hd("TANGGAL BAYAR","#E2EFDA")}</tr>`;
-  const table=(title,list)=>{ let n=0; const body=list.map(x=>{ n++; const span=1+x.o.items.length;
+  const table=(title,list)=>{ let n=0; const body=list.map(x=>{ n++; const O=viewOrder(x.o); const span=1+O.items.length;
       // kolom TANGGAL OK PROSES dipecah per proses lanjutan (judul sub-proses yang bertanggal)
-      const starts=[0]; x.o.items.forEach((i,k)=>{ if(i.j&&i.s) starts.push(k+1); }); const segLen=st0=>{ const ix=starts.indexOf(st0); return (ix+1<starts.length?starts[ix+1]:span)-st0; };
-      const pst=paySegs(x.o), pLen=a=>{ const ix=pst.indexOf(a); return (ix+1<pst.length?pst[ix+1]:span)-a; };
-      const pCells=a=>{ if(!pst.includes(a)) return ""; const P=a===0?segPay(x.o,true):segPay(x.o.items[a-1],false), lab=a===0?"":`<div style="font-weight:700;font-size:10.5px;margin-bottom:3px">${esc(x.o.items[a-1].d)}</div>`;
+      const starts=[0]; O.items.forEach((i,k)=>{ if(i.j&&i.s) starts.push(k+1); }); const segLen=st0=>{ const ix=starts.indexOf(st0); return (ix+1<starts.length?starts[ix+1]:span)-st0; };
+      const pst=paySegs(O), pLen=a=>{ const ix=pst.indexOf(a); return (ix+1<pst.length?pst[ix+1]:span)-a; };
+      const pCells=a=>{ if(!pst.includes(a)) return ""; const P=a===0?seg0(O):segPay(O.items[a-1],false), lab=a===0?"":`<div style="font-weight:700;font-size:10.5px;margin-bottom:3px">${esc(O.items[a-1].d)}</div>`;
         return `<td rowspan="${pLen(a)}" style="${bd};white-space:pre;background:${P.bg};min-width:190px;text-align:left">${lab}${esc(P.st)}</td><td rowspan="${pLen(a)}" style="${bd};white-space:pre-line;text-align:left;min-width:110px">${esc(P.dt)}</td>`; };
       const fCell=(st0,val)=>`<td rowspan="${segLen(st0)}" style="${bd};text-align:center;font-weight:700;white-space:nowrap">${val}</td>`;
-      let h=`<tr><td rowspan="${span}" style="${bd};text-align:center">${n}</td><td rowspan="${span}" style="${bd};text-align:center">${esc(x.o.no)}</td><td rowspan="${span}" style="${bd};text-align:center;font-weight:700">${esc(x.o.c)}</td>${fCell(0,x.o.ok?dmyFull(x.o.ok):"-")}<td colspan="8" style="${bd};background:#ED7D31;text-align:center;font-weight:700">${esc(x.o.o)}</td>${pCells(0)}</tr>`;
-      x.o.items.forEach((i,k)=>{ if(i.j){ h+=`<tr>${i.s?fCell(k+1,dmyFull(i.s)):""}<td colspan="8" style="${bd};background:#ED7D31;text-align:center;font-weight:700">${esc(i.d)}</td>${pCells(k+1)}</tr>`; return; }
+      let h=`<tr><td rowspan="${span}" style="${bd};text-align:center">${n}</td><td rowspan="${span}" style="${bd};text-align:center">${esc(O.no)}</td><td rowspan="${span}" style="${bd};text-align:center;font-weight:700">${esc(O.c)}</td>${fCell(0,O.ok?dmyFull(O.ok):"-")}<td colspan="8" style="${bd};background:#ED7D31;text-align:center;font-weight:700">${esc(O.o)}</td>${pCells(0)}</tr>`;
+      O.items.forEach((i,k)=>{ if(i.j){ h+=`<tr>${i.s?fCell(k+1,dmyFull(i.s)):""}<td colspan="8" style="${bd};background:#ED7D31;text-align:center;font-weight:700">${esc(i.d)}</td>${pCells(k+1)}</tr>`; return; }
         const late=isLate(i), red=late?";color:#C00000;font-weight:700":"", tg=targetOf(i);
         h+=`<tr><td style="${bd}">${esc(i.d)}</td><td style="${bd};text-align:center">${esc(i.p||"-")}</td><td style="${bd};text-align:center">${esc(i.t||"-")}</td><td style="${bd};text-align:center;white-space:nowrap">${i.h?i.h+" Hari Kerja":"-"}</td><td style="${bd};text-align:center;white-space:nowrap">${i.s?dmyFull(i.s):"-"}</td><td style="${bd};text-align:center;white-space:nowrap${red}">${tg?dmyFull(tg):"-"}</td><td style="${bd};text-align:center;background:${stBg(i.st)}${red}">${esc(i.st)}${late?" (lewat target)":""}</td><td style="${bd};white-space:pre-line">${esc(i.k||"")}</td></tr>`; });
       return h; }).join("");
@@ -1071,14 +1160,14 @@ async function buildXlsx(R){
     put(14,"STATUS BAYAR",H3); put(15,"",H3); merges.push({s:{r,c:14},e:{r,c:15}}); rows[r]={hpt:30}; r++;
     for(let c=2;c<=9;c++) put(c,"",H1); ["DOK. SUBMIT","TARGET SELESAI","CURRENT STATUS","KETERANGAN"].forEach((t,k)=>put(10+k,t,H2)); put(14,"STATUS",H3); put(15,"TANGGAL BAYAR",H3); rows[r]={hpt:36}; r++;
     const ORG={fill:{fgColor:{rgb:"ED7D31"}},font:{name:FN,sz:12,bold:true}};
-    list.forEach((x,n)=>{ const start=r;
-      put(2,n+1,st({font:{name:FN,sz:12,bold:true}})); put(3,x.o.no,st({font:{name:FN,sz:12,bold:true}})); put(4,x.o.c,st({font:{name:FN,sz:12,bold:true}}));
-      const pst=paySegs(x.o), pRows=[]; const putPay=(a)=>{ if(!pst.includes(a)) return; const P=a===0?segPay(x.o,true):segPay(x.o.items[a-1],false);
-        put(14,(a===0?"":x.o.items[a-1].d+"\n")+P.st,st({fill:{fgColor:{rgb:P.bg.slice(1)}},alignment:{horizontal:"left",vertical:"top",wrapText:true}})); put(15,P.dt,st({alignment:{horizontal:"left",vertical:"top",wrapText:true}})); pRows.push(r); };
-      putPay(0); put(5,x.o.ok?dmyFull(x.o.ok):"-",st({font:{name:FN,sz:12,bold:true}}));
-      put(6,x.o.o,st(ORG)); for(let c=7;c<=13;c++) put(c,"",st(ORG)); merges.push({s:{r,c:6},e:{r,c:13}}); rows[r]={hpt:30}; r++;
+    list.forEach((x,n)=>{ const start=r; const O=viewOrder(x.o);
+      put(2,n+1,st({font:{name:FN,sz:12,bold:true}})); put(3,O.no,st({font:{name:FN,sz:12,bold:true}})); put(4,O.c,st({font:{name:FN,sz:12,bold:true}}));
+      const pst=paySegs(O), pRows=[]; const putPay=(a)=>{ if(!pst.includes(a)) return; const P=a===0?seg0(O):segPay(O.items[a-1],false);
+        put(14,(a===0?"":O.items[a-1].d+"\n")+P.st,st({fill:{fgColor:{rgb:P.bg.slice(1)}},alignment:{horizontal:"left",vertical:"top",wrapText:true}})); put(15,P.dt,st({alignment:{horizontal:"left",vertical:"top",wrapText:true}})); pRows.push(r); };
+      putPay(0); put(5,O.ok?dmyFull(O.ok):"-",st({font:{name:FN,sz:12,bold:true}}));
+      put(6,O.o,st(ORG)); for(let c=7;c<=13;c++) put(c,"",st(ORG)); merges.push({s:{r,c:6},e:{r,c:13}}); rows[r]={hpt:30}; r++;
       const fStarts=[start];
-      x.o.items.forEach((i,ki)=>{ for(let c=2;c<=5;c++) put(c,"",st()); put(14,"",st()); put(15,"",st()); putPay(ki+1);
+      O.items.forEach((i,ki)=>{ for(let c=2;c<=5;c++) put(c,"",st()); put(14,"",st()); put(15,"",st()); putPay(ki+1);
         if(i.j){ if(i.s){ fStarts.push(r); put(5,dmyFull(i.s),st({font:{name:FN,sz:12,bold:true}})); } put(6,i.d,st(ORG)); for(let c=7;c<=13;c++) put(c,"",st(ORG)); merges.push({s:{r,c:6},e:{r,c:13}}); rows[r]={hpt:26}; r++; return; }
         const late=isLate(i), tg=targetOf(i), red=late?{font:{name:FN,sz:12,bold:true,color:{rgb:"C00000"}}}:{};
         put(6,i.d,st({alignment:{horizontal:"left",vertical:"center",wrapText:true}})); put(7,i.p||"-",st()); put(8,i.t||"-",st()); put(9,i.h?i.h+" Hari Kerja":"-",st());
@@ -1297,6 +1386,8 @@ async function startView(){
   await load();
 }
 
+(()=>{ const b=document.getElementById("langBtn"); if(b){ b.textContent=LANG==="ko"?"🇮🇩 Bahasa Indonesia":"🇰🇷 한국어"; b.onclick=()=>setLang(LANG==="ko"?"id":"ko"); }
+  const card=document.querySelector("#vLogin .card")||document.getElementById("vLogin"); if(card&&!document.getElementById("lgLang")){ const a=document.createElement("button"); a.type="button"; a.id="lgLang"; a.className="langbtn lg"; a.setAttribute("data-noi18n",""); a.textContent=LANG==="ko"?"🇮🇩 Bahasa Indonesia":"🇰🇷 한국어"; a.onclick=()=>setLang(LANG==="ko"?"id":"ko"); card.appendChild(a); } })();
 const CFG_ERR=typeof window.CT_API_URL==="undefined"
   ? "File <b>config.js</b> tidak ditemukan. Pastikan namanya persis <b>config.js</b> (huruf kecil semua) dan berada di folder yang sama dengan index.html, bukan di dalam folder lain."
   : /TEMPEL/i.test(API_URL)||!API_URL ? "File <b>config.js</b> sudah ada, tetapi link /exec belum diisi."
